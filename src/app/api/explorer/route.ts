@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getLichessApiToken, EXPLORER_BASE_URL } from "@/lib/lichess/config";
 import { lookupOpening } from "@/lib/lichess/opening-lookup";
 import type { LichessExplorerData, LichessMoveStat } from "@/lib/types";
-
-const EXPLORER_HOSTS = [
-  "https://explorer.lichess.ovh",
-  "https://explorer.lichess.org",
-];
 
 function parseExplorerResponse(data: Record<string, unknown>): LichessExplorerData {
   const white = (data.white as number) ?? 0;
@@ -51,6 +47,48 @@ function parseExplorerResponse(data: Record<string, unknown>): LichessExplorerDa
   };
 }
 
+function buildFallback(
+  uciMoves: string[],
+  reason: "missing_token" | "unavailable"
+): LichessExplorerData & { unavailable: boolean; missingToken?: boolean } {
+  const localOpening = lookupOpening(uciMoves);
+
+  return {
+    white: 0,
+    draws: 0,
+    black: 0,
+    moves: [],
+    opening: localOpening
+      ? { eco: localOpening.eco, name: localOpening.name }
+      : null,
+    isOpening: localOpening?.isInTheory ?? false,
+    unavailable: true,
+    missingToken: reason === "missing_token",
+  };
+}
+
+async function fetchFromLichess(
+  params: URLSearchParams,
+  token: string
+): Promise<LichessExplorerData | null> {
+  const headers: HeadersInit = {
+    Accept: "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+
+  const response = await fetch(`${EXPLORER_BASE_URL}/lichess?${params}`, {
+    headers,
+    next: { revalidate: 3600 },
+  });
+
+  if (!response.ok) return null;
+
+  const text = await response.text();
+  const line = text.trim().split("\n").pop() ?? text;
+  const raw = JSON.parse(line) as Record<string, unknown>;
+  return parseExplorerResponse(raw);
+}
+
 export async function GET(request: NextRequest) {
   const fen = request.nextUrl.searchParams.get("fen");
   if (!fen) {
@@ -61,47 +99,26 @@ export async function GET(request: NextRequest) {
   const uciMoves = play ? play.split(",").filter(Boolean) : [];
 
   const params = new URLSearchParams({ fen });
-  if (play) params.set("play", play.replace(/,/g, ","));
+  if (play) params.set("play", play);
+
+  const token = getLichessApiToken();
+
+  if (!token) {
+    return NextResponse.json(buildFallback(uciMoves, "missing_token"));
+  }
 
   let explorerData: LichessExplorerData | null = null;
 
-  for (const host of EXPLORER_HOSTS) {
-    try {
-      const response = await fetch(`${host}/lichess?${params}`, {
-        headers: { Accept: "application/json" },
-        next: { revalidate: 3600 },
-      });
-
-      if (!response.ok) continue;
-
-      const text = await response.text();
-      const line = text.trim().split("\n").pop() ?? text;
-      const raw = JSON.parse(line) as Record<string, unknown>;
-      explorerData = parseExplorerResponse(raw);
-      break;
-    } catch {
-      // try next host
-    }
+  try {
+    explorerData = await fetchFromLichess(params, token);
+  } catch {
+    explorerData = null;
   }
 
   const localOpening = lookupOpening(uciMoves);
 
   if (!explorerData) {
-    explorerData = {
-      white: 0,
-      draws: 0,
-      black: 0,
-      moves: [],
-      opening: localOpening
-        ? { eco: localOpening.eco, name: localOpening.name }
-        : null,
-      isOpening: localOpening?.isInTheory ?? false,
-    };
-
-    return NextResponse.json({
-      ...explorerData,
-      unavailable: true,
-    });
+    return NextResponse.json(buildFallback(uciMoves, "unavailable"));
   }
 
   if (!explorerData.opening && localOpening) {

@@ -6,6 +6,7 @@ interface DatabasePanelProps {
   explorer: LichessExplorerData | null;
   loading: boolean;
   unavailable?: boolean;
+  missingToken?: boolean;
   onPlayMove: (uci: string) => void;
 }
 
@@ -13,6 +14,7 @@ export function DatabasePanel({
   explorer,
   loading,
   unavailable,
+  missingToken,
   onPlayMove,
 }: DatabasePanelProps) {
   return (
@@ -23,9 +25,29 @@ export function DatabasePanel({
 
       {loading ? (
         <p className="text-sm text-[var(--muted)]">Loading statistics…</p>
+      ) : missingToken ? (
+        <div className="text-sm text-[var(--muted)] mb-3 space-y-2">
+          <p>
+            Live Lichess database stats require a personal API token on the server.
+          </p>
+          <p>
+            Create a free token at{" "}
+            <a
+              href="https://lichess.org/account/oauth/token"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[var(--accent-text)] hover:underline"
+            >
+              lichess.org/account/oauth/token
+            </a>{" "}
+            and set <code className="text-xs">LICHESS_API_TOKEN</code> in your
+            deployment environment (Vercel → Settings → Environment Variables).
+          </p>
+          <p>Opening names still work via the local ECO book.</p>
+        </div>
       ) : unavailable ? (
         <p className="text-sm text-[var(--muted)] mb-3">
-          Live database stats are temporarily unavailable. Opening recognition uses the Lichess opening book.
+          Lichess database is temporarily unavailable. Opening recognition uses the local ECO book.
         </p>
       ) : null}
 

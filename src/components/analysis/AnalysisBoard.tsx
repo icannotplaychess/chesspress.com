@@ -21,7 +21,7 @@ import type { Arrow } from "react-chessboard";
 export function AnalysisBoard() {
   const game = useChessGame();
   const { analysis, isAnalyzing } = useStockfish(game.currentFen);
-  const { data: explorer, loading: explorerLoading, unavailable: explorerUnavailable } = useLichessExplorer(
+  const { data: explorer, loading: explorerLoading, unavailable: explorerUnavailable, missingToken: explorerMissingToken } = useLichessExplorer(
     game.currentFen,
     game.history.slice(0, game.moveIndex + 1).map((m) => m.uci)
   );
@@ -203,6 +203,7 @@ export function AnalysisBoard() {
             explorer={explorer}
             loading={explorerLoading}
             unavailable={explorerUnavailable}
+            missingToken={explorerMissingToken}
             onPlayMove={playDatabaseMove}
           />
         </div>

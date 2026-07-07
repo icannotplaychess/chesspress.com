@@ -3,7 +3,7 @@ import type { LichessExplorerData } from "@/lib/types";
 export async function fetchLichessExplorer(
   fen: string,
   options: { uciMoves?: string[] } = {}
-): Promise<LichessExplorerData & { unavailable?: boolean }> {
+): Promise<LichessExplorerData & { unavailable?: boolean; missingToken?: boolean }> {
   const params = new URLSearchParams({ fen });
   if (options.uciMoves?.length) {
     params.set("play", options.uciMoves.join(","));

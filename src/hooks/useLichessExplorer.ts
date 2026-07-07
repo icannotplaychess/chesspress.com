@@ -9,6 +9,7 @@ export function useLichessExplorer(fen: string, uciMoves: string[] = []) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
+  const [missingToken, setMissingToken] = useState(false);
 
   const movesKey = uciMoves.join(",");
 
@@ -25,7 +26,8 @@ export function useLichessExplorer(fen: string, uciMoves: string[] = []) {
         });
         if (!cancelled) {
           setData(result);
-          setUnavailable(!!(result as { unavailable?: boolean }).unavailable);
+          setUnavailable(!!result.unavailable);
+          setMissingToken(!!result.missingToken);
         }
       } catch (err) {
         if (!cancelled) {
@@ -43,5 +45,5 @@ export function useLichessExplorer(fen: string, uciMoves: string[] = []) {
     };
   }, [fen, movesKey]);
 
-  return { data, loading, error, unavailable };
+  return { data, loading, error, unavailable, missingToken };
 }
