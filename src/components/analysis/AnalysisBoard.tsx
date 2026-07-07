@@ -210,13 +210,14 @@ export function AnalysisBoard() {
 
         {/* Center — board */}
         <div className="flex flex-col items-center gap-4 order-1 lg:order-2">
-          <div className="flex items-stretch gap-2 w-full max-w-[min(100%,560px)]">
+          <div className="grid grid-cols-[28px_1fr] gap-2 w-full max-w-[min(100%,560px)] items-stretch">
             <EvaluationBar
               cp={evalDisplay.cp}
               mate={evalDisplay.mate}
               orientation={game.orientation}
+              isAnalyzing={isAnalyzing}
             />
-            <div className="flex-1 aspect-square">
+            <div className="w-full aspect-square min-w-0">
               <Chessboard
                 options={{
                   position: game.currentFen,
