@@ -32,12 +32,22 @@ Without the token, the Analysis Board still works — Stockfish analysis, openin
 
 ## Deployment (Vercel)
 
-The Next.js app lives at the **repository root** (not in a subfolder). Connect the repo to Vercel with default settings:
+The Next.js app lives at the **repository root**. Connect the repo to Vercel with these settings:
 
-- **Framework Preset:** Next.js (auto-detected)
-- **Root Directory:** `.` (leave blank / default)
-- **Build Command:** `npm run build`
-- **Environment variable:** `LICHESS_API_TOKEN`
+| Setting | Value |
+|---------|--------|
+| **Production Branch** | `main` |
+| **Root Directory** | *(leave empty — do NOT use `app`)* |
+| **Framework Preset** | Next.js |
+| **Build Command** | `npm run build` |
+| **Environment variable** | `LICHESS_API_TOKEN` |
+
+### If you still see 404 after deploy
+
+1. **Production branch** must be `main` (the app was only on a feature branch initially).
+2. **Root Directory** must be blank. If it was set to `app` from an earlier attempt, clear it and redeploy.
+3. Trigger a fresh deploy: Deployments → ⋯ → **Redeploy** (not just refresh the page).
+4. Visit `/` for the dashboard or `/analysis` for the board — not a subpath like `/app`.
 
 Routes:
 
