@@ -1,4 +1,4 @@
-import { AnalysisBoard } from "@/components/analysis/AnalysisBoard";
+import { AnalysisBoardClient } from "@/components/analysis/AnalysisBoardClient";
 
 export const metadata = {
   title: "Analysis Board — ChessPress",
@@ -13,7 +13,7 @@ export default function AnalysisPage() {
           Engine analysis, opening recognition, and coach explanations — all synchronized.
         </p>
       </div>
-      <AnalysisBoard />
+      <AnalysisBoardClient />
     </div>
   );
 }

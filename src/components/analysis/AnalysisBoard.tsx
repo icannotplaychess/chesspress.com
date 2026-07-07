@@ -20,7 +20,7 @@ import type { Arrow } from "react-chessboard";
 
 export function AnalysisBoard() {
   const game = useChessGame();
-  const { analysis, isAnalyzing } = useStockfish(game.currentFen);
+  const { analysis, isAnalyzing, error: engineError } = useStockfish(game.currentFen);
   const { data: explorer, loading: explorerLoading, unavailable: explorerUnavailable, missingToken: explorerMissingToken } = useLichessExplorer(
     game.currentFen,
     game.history.slice(0, game.moveIndex + 1).map((m) => m.uci)
@@ -250,7 +250,7 @@ export function AnalysisBoard() {
               onSelect={game.goToMove}
             />
           </div>
-          <EnginePanel analysis={analysis} isAnalyzing={isAnalyzing} />
+          <EnginePanel analysis={analysis} isAnalyzing={isAnalyzing} error={engineError} />
         </div>
       </div>
     </div>

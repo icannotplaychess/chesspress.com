@@ -3,6 +3,8 @@ import { getLichessApiToken, EXPLORER_BASE_URL } from "@/lib/lichess/config";
 import { lookupOpening } from "@/lib/lichess/opening-lookup";
 import type { LichessExplorerData, LichessMoveStat } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 function parseExplorerResponse(data: Record<string, unknown>): LichessExplorerData {
   const white = (data.white as number) ?? 0;
   const draws = (data.draws as number) ?? 0;
@@ -43,8 +45,24 @@ function parseExplorerResponse(data: Record<string, unknown>): LichessExplorerDa
     black: total > 0 ? Math.round((black / total) * 100) : 0,
     moves,
     opening: openingData ? { eco: openingData.eco, name: openingData.name } : null,
-    isOpening: (data.isOpening as boolean) ?? false,
+    isOpening: Boolean(openingData),
   };
+}
+
+function mergeOpening(
+  data: LichessExplorerData,
+  uciMoves: string[]
+): LichessExplorerData {
+  const localOpening = lookupOpening(uciMoves);
+
+  if (localOpening) {
+    data.opening = { eco: localOpening.eco, name: localOpening.name };
+    data.isOpening = localOpening.isInTheory;
+  } else if (!data.opening) {
+    data.isOpening = false;
+  }
+
+  return data;
 }
 
 function buildFallback(
@@ -68,20 +86,23 @@ function buildFallback(
 }
 
 async function fetchFromLichess(
-  params: URLSearchParams,
+  fen: string,
   token: string
 ): Promise<LichessExplorerData | null> {
-  const headers: HeadersInit = {
-    Accept: "application/json",
-    Authorization: `Bearer ${token}`,
-  };
+  const params = new URLSearchParams({ fen });
 
   const response = await fetch(`${EXPLORER_BASE_URL}/lichess?${params}`, {
-    headers,
-    next: { revalidate: 3600 },
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    cache: "no-store",
   });
 
-  if (!response.ok) return null;
+  if (!response.ok) {
+    console.error("Lichess explorer error:", response.status, await response.text());
+    return null;
+  }
 
   const text = await response.text();
   const line = text.trim().split("\n").pop() ?? text;
@@ -98,35 +119,22 @@ export async function GET(request: NextRequest) {
   const play = request.nextUrl.searchParams.get("play") ?? "";
   const uciMoves = play ? play.split(",").filter(Boolean) : [];
 
-  const params = new URLSearchParams({ fen });
-  if (play) params.set("play", play);
-
   const token = getLichessApiToken();
 
   if (!token) {
     return NextResponse.json(buildFallback(uciMoves, "missing_token"));
   }
 
-  let explorerData: LichessExplorerData | null = null;
-
   try {
-    explorerData = await fetchFromLichess(params, token);
-  } catch {
-    explorerData = null;
-  }
+    const explorerData = await fetchFromLichess(fen, token);
 
-  const localOpening = lookupOpening(uciMoves);
+    if (!explorerData) {
+      return NextResponse.json(buildFallback(uciMoves, "unavailable"));
+    }
 
-  if (!explorerData) {
+    return NextResponse.json(mergeOpening(explorerData, uciMoves));
+  } catch (error) {
+    console.error("Explorer route error:", error);
     return NextResponse.json(buildFallback(uciMoves, "unavailable"));
   }
-
-  if (!explorerData.opening && localOpening) {
-    explorerData.opening = { eco: localOpening.eco, name: localOpening.name };
-    explorerData.isOpening = localOpening.isInTheory;
-  } else if (localOpening && !localOpening.isInTheory) {
-    explorerData.isOpening = false;
-  }
-
-  return NextResponse.json(explorerData);
 }

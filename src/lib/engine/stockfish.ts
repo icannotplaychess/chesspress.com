@@ -48,10 +48,13 @@ export class StockfishEngine {
     if (this.worker) return;
 
     return new Promise((resolve, reject) => {
-      const wasmPath = encodeURIComponent("/stockfish/stockfish.wasm");
-      this.worker = new Worker(
-        `/stockfish/stockfish.js#${wasmPath},worker`
-      );
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const wasmUrl = `${origin}/stockfish/stockfish.wasm`;
+      const jsUrl = `${origin}/stockfish/stockfish.js`;
+      const wasmPath = encodeURIComponent(wasmUrl);
+
+      this.worker = new Worker(`${jsUrl}#${wasmPath},worker`);
 
       const onReady = (event: MessageEvent<string>) => {
         const text = typeof event.data === "string" ? event.data : "";

@@ -42,12 +42,22 @@ The Next.js app lives at the **repository root**. Connect the repo to Vercel wit
 | **Build Command** | `npm run build` |
 | **Environment variable** | `LICHESS_API_TOKEN` |
 
-### If you still see 404 after deploy
+### If the site is blank or shows "not found"
 
-1. **Production branch** must be `main` (the app was only on a feature branch initially).
-2. **Root Directory** must be blank. If it was set to `app` from an earlier attempt, clear it and redeploy.
-3. Trigger a fresh deploy: Deployments → ⋯ → **Redeploy** (not just refresh the page).
-4. Visit `/` for the dashboard or `/analysis` for the board — not a subpath like `/app`.
+**The app is deployed and working at:** [https://chesspress-com.vercel.app](https://chesspress-com.vercel.app)
+
+If `chesspress.com` shows a blank page or redirects to `/lander`, your **custom domain is not connected to Vercel** — it still points to a domain parking page. Fix:
+
+1. Vercel → your project → **Settings → Domains**
+2. Add `chesspress.com` and `www.chesspress.com`
+3. Update DNS at your registrar to the records Vercel provides (usually `A` record to `76.76.21.21` or `CNAME` to `cname.vercel-dns.com`)
+4. Wait for DNS propagation, then redeploy
+
+Also verify:
+
+- **Production branch** is `main`
+- **Root Directory** is empty (not `app`)
+- `LICHESS_API_TOKEN` is set in Environment Variables
 
 Routes:
 

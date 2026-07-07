@@ -6,9 +6,10 @@ import type { PositionAnalysis } from "@/lib/types";
 interface EnginePanelProps {
   analysis: PositionAnalysis | null;
   isAnalyzing: boolean;
+  error?: string | null;
 }
 
-export function EnginePanel({ analysis, isAnalyzing }: EnginePanelProps) {
+export function EnginePanel({ analysis, isAnalyzing, error }: EnginePanelProps) {
   const top = analysis?.lines[0];
 
   return (
@@ -20,7 +21,11 @@ export function EnginePanel({ analysis, isAnalyzing }: EnginePanelProps) {
         )}
       </div>
 
-      {top ? (
+      {error ? (
+        <p className="text-sm text-[var(--danger)]">
+          {error}. Try refreshing the page.
+        </p>
+      ) : top ? (
         <div className="space-y-3">
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold chess-notation">
