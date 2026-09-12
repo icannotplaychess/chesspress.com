@@ -5,6 +5,10 @@ import Google from "next-auth/providers/google";
 import { prisma } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth/password";
 
+const googleEnabled =
+  Boolean(process.env.GOOGLE_CLIENT_ID) &&
+  Boolean(process.env.GOOGLE_CLIENT_SECRET);
+
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
   secret: process.env.AUTH_SECRET,
@@ -15,11 +19,15 @@ export const authConfig: NextAuthConfig = {
     newUser: "/dashboard",
   },
   providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      allowDangerousEmailAccountLinking: true,
-    }),
+    ...(googleEnabled
+      ? [
+          Google({
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            allowDangerousEmailAccountLinking: true,
+          }),
+        ]
+      : []),
     Credentials({
       name: "credentials",
       credentials: {

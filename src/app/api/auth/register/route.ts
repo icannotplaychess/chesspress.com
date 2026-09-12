@@ -45,10 +45,12 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
-  } catch {
-    return NextResponse.json(
-      { error: "Could not create account. Please try again." },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error("[register]", err);
+    const message =
+      err instanceof Error && err.message.includes("connect")
+        ? "Database connection failed. Check DATABASE_URL on Vercel."
+        : "Could not create account. Please try again.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
