@@ -10,7 +10,7 @@ interface AddToRepertoireModalProps {
   eco?: string;
   moves: RepertoireMove[];
   onAdd: (repertoireId: string, lineName: string, eco?: string) => void;
-  onCreate: (name: string) => Repertoire | void;
+  onCreate: (name: string) => Repertoire | void | Promise<Repertoire | void>;
   onClose: () => void;
 }
 
@@ -56,9 +56,9 @@ export function AddToRepertoireModal({
                 </button>
               )}
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (!newRepName.trim()) return;
-                  const rep = onCreate(newRepName.trim());
+                  const rep = await onCreate(newRepName.trim());
                   if (rep) {
                     onAdd(rep.id, name, eco);
                     onClose();

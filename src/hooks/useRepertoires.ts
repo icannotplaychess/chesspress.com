@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useCallback, useEffect, useState } from "react";
 import type { Repertoire, RepertoireLine } from "@/lib/repertoire/types";
 import * as storage from "@/lib/repertoire/storage";
 import {
@@ -9,75 +10,198 @@ import {
   repertoireMastery,
 } from "@/lib/repertoire/spaced-repetition";
 
-export function useRepertoires() {
-  const [repertoires, setRepertoires] = useState<Repertoire[]>(() =>
-    typeof window === "undefined" ? [] : storage.getRepertoires()
-  );
-  const [loaded, setLoaded] = useState(() => typeof window !== "undefined");
+async function fetchServerRepertoires(): Promise<Repertoire[]> {
+  const res = await fetch("/api/repertoires");
+  if (!res.ok) return [];
+  return res.json();
+}
 
-  const refresh = useCallback(() => {
-    setRepertoires(storage.getRepertoires());
+async function migrateLocalToServer(): Promise<void> {
+  const local = storage.getRepertoires();
+  if (local.length === 0) return;
+  await fetch("/api/repertoires/migrate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ repertoires: local }),
+  });
+}
+
+export function useRepertoires() {
+  const { status } = useSession();
+  const isAuthenticated = status === "authenticated";
+  const [repertoires, setRepertoires] = useState<Repertoire[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const refresh = useCallback(async () => {
+    if (isAuthenticated) {
+      await migrateLocalToServer();
+      const data = await fetchServerRepertoires();
+      setRepertoires(data);
+    } else if (typeof window !== "undefined") {
+      setRepertoires(storage.getRepertoires());
+    }
     setLoaded(true);
-  }, []);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (status === "loading") return;
+    queueMicrotask(() => {
+      void refresh();
+    });
+  }, [status, refresh]);
+
+  const persistRepertoire = useCallback(
+    async (rep: Repertoire) => {
+      if (isAuthenticated) {
+        await fetch("/api/repertoires", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(rep),
+        });
+      } else {
+        storage.updateRepertoire(rep);
+      }
+    },
+    [isAuthenticated]
+  );
 
   const create = useCallback(
-    (name: string, color: Repertoire["color"] = "white") => {
+    async (name: string, color: Repertoire["color"] = "white") => {
+      if (isAuthenticated) {
+        const res = await fetch("/api/repertoires", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, color }),
+        });
+        const rep = await res.json();
+        await refresh();
+        return rep as Repertoire;
+      }
       const rep = storage.createRepertoire(name, color);
-      refresh();
+      await refresh();
       return rep;
     },
-    [refresh]
+    [isAuthenticated, refresh]
   );
 
   const update = useCallback(
-    (repertoire: Repertoire) => {
-      storage.updateRepertoire(repertoire);
-      refresh();
+    async (repertoire: Repertoire) => {
+      if (isAuthenticated) {
+        await fetch("/api/repertoires", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(repertoire),
+        });
+      } else {
+        storage.updateRepertoire(repertoire);
+      }
+      await refresh();
     },
-    [refresh]
+    [isAuthenticated, refresh]
   );
 
   const remove = useCallback(
-    (id: string) => {
-      storage.deleteRepertoire(id);
-      refresh();
+    async (id: string) => {
+      if (isAuthenticated) {
+        await fetch(`/api/repertoires/${id}`, { method: "DELETE" });
+      } else {
+        storage.deleteRepertoire(id);
+      }
+      await refresh();
     },
-    [refresh]
+    [isAuthenticated, refresh]
   );
 
   const duplicate = useCallback(
-    (id: string) => {
-      const copy = storage.duplicateRepertoire(id);
-      refresh();
-      return copy;
+    async (id: string) => {
+      if (!isAuthenticated) {
+        const copy = storage.duplicateRepertoire(id);
+        await refresh();
+        return copy;
+      }
+      const rep = repertoires.find((r) => r.id === id);
+      if (!rep) return null;
+      const res = await fetch("/api/repertoires", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: `${rep.name} (copy)`, color: rep.color }),
+      });
+      const newRep = await res.json();
+      await fetch("/api/repertoires", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...newRep, lines: rep.lines.map((l) => ({ ...l, id: crypto.randomUUID() })) }),
+      });
+      await refresh();
+      return newRep;
     },
-    [refresh]
+    [isAuthenticated, repertoires, refresh]
   );
 
   const addLine = useCallback(
-    (repertoireId: string, line: Omit<RepertoireLine, "id" | "memory">) => {
+    async (repertoireId: string, line: Omit<RepertoireLine, "id" | "memory">) => {
+      if (isAuthenticated) {
+        const rep = repertoires.find((r) => r.id === repertoireId);
+        if (!rep) return null;
+        const { createInitialMemory } = await import("@/lib/repertoire/spaced-repetition");
+        const lineWithMemory: RepertoireLine = {
+          ...line,
+          id: crypto.randomUUID(),
+          memory: createInitialMemory(),
+        };
+        const updated = {
+          ...rep,
+          lines: [...rep.lines, lineWithMemory],
+        };
+        await persistRepertoire(updated);
+        await refresh();
+        return lineWithMemory;
+      }
       const result = storage.addLineToRepertoire(repertoireId, line);
-      refresh();
+      await refresh();
       return result;
     },
-    [refresh]
+    [isAuthenticated, repertoires, persistRepertoire, refresh]
   );
 
   const addLineFromPgn = useCallback(
-    (repertoireId: string, pgn: string, name: string, eco?: string) => {
+    async (repertoireId: string, pgn: string, name: string, eco?: string) => {
+      if (isAuthenticated) {
+        const result = storage.addLineFromPgn(repertoireId, pgn, name, eco);
+        if (!result) return null;
+        const rep = repertoires.find((r) => r.id === repertoireId);
+        if (rep) {
+          await persistRepertoire({
+            ...rep,
+            lines: [...rep.lines, result],
+          });
+        }
+        await refresh();
+        return result;
+      }
       const result = storage.addLineFromPgn(repertoireId, pgn, name, eco);
-      refresh();
+      await refresh();
       return result;
     },
-    [refresh]
+    [isAuthenticated, repertoires, persistRepertoire, refresh]
   );
 
   const removeLine = useCallback(
-    (repertoireId: string, lineId: string) => {
-      storage.removeLine(repertoireId, lineId);
-      refresh();
+    async (repertoireId: string, lineId: string) => {
+      if (isAuthenticated) {
+        const rep = repertoires.find((r) => r.id === repertoireId);
+        if (rep) {
+          await persistRepertoire({
+            ...rep,
+            lines: rep.lines.filter((l) => l.id !== lineId),
+          });
+        }
+      } else {
+        storage.removeLine(repertoireId, lineId);
+      }
+      await refresh();
     },
-    [refresh]
+    [isAuthenticated, repertoires, persistRepertoire, refresh]
   );
 
   const stats = useCallback(() => {
