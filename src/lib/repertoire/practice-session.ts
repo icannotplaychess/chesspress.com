@@ -27,7 +27,8 @@ export function boardOrientation(
 export function buildLineQueue(
   repertoires: Repertoire[],
   mode: PracticeMode,
-  tournamentRepertoireId?: string
+  tournamentRepertoireId?: string,
+  options?: { lineId?: string; requireLesson?: boolean }
 ): PracticeLine[] {
   let reps = repertoires;
 
@@ -40,6 +41,8 @@ export function buildLineQueue(
   for (const rep of reps) {
     for (const line of rep.lines) {
       if (line.moves.length === 0) continue;
+      if (options?.lineId && line.id !== options.lineId) continue;
+      if ((options?.requireLesson ?? true) && !line.memory.lessonCompleted) continue;
 
       let include = true;
       let priority = 1000 - line.memory.mastery;
@@ -76,6 +79,7 @@ export function buildLineQueue(
             repertoireColor: rep.color,
             lineId: line.id,
             lineName: line.name,
+            eco: line.eco,
             moves: line.moves,
           },
           priority,

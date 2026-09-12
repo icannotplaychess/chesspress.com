@@ -12,6 +12,7 @@ import {
   START_FEN,
 } from "@/lib/repertoire/practice-session";
 import {
+  linesNeedingLesson,
   recordLineComplete,
   recordMistake,
 } from "@/lib/repertoire/spaced-repetition";
@@ -23,11 +24,6 @@ const MODES: { id: PracticeMode; label: string; description: string }[] = [
     id: "mixed",
     label: "Mixed Practice",
     description: "All lines — weaker ones come up more often",
-  },
-  {
-    id: "learn_new",
-    label: "Learn New",
-    description: "Lines you haven't completed yet",
   },
   {
     id: "weakest",
@@ -44,11 +40,13 @@ const MODES: { id: PracticeMode; label: string; description: string }[] = [
 interface PracticeTrainerProps {
   initialMode?: PracticeMode;
   tournamentRepId?: string;
+  initialLineId?: string;
 }
 
 export function PracticeTrainer({
   initialMode = "mixed",
   tournamentRepId,
+  initialLineId,
 }: PracticeTrainerProps) {
   const { repertoires, loaded, stats } = useRepertoires();
   const [mode, setMode] = useState<PracticeMode>(initialMode);
@@ -308,11 +306,20 @@ export function PracticeTrainer({
   );
 
   const startSession = useCallback(() => {
-    const lines = buildLineQueue(repertoires, mode, tournamentRepId);
+    const lines = buildLineQueue(repertoires, mode, tournamentRepId, {
+      lineId: initialLineId,
+      requireLesson: true,
+    });
     if (lines.length === 0) {
+      const needsLesson = repertoires.reduce(
+        (s, r) => s + linesNeedingLesson(r.lines),
+        0
+      );
       setFeedback({
         type: null,
-        message: "No lines available. Add lines to your repertoire first.",
+        message: needsLesson > 0
+          ? "Learn your lines with Shreya first — switch to the Learn tab above."
+          : "No lines available. Add lines to your repertoire first.",
       });
       return;
     }
@@ -323,7 +330,7 @@ export function PracticeTrainer({
     setSessionStats({ linesCompleted: 0, mistakes: 0 });
     setFeedback({ type: null, message: "" });
     beginLine(lines[0]);
-  }, [repertoires, mode, tournamentRepId, clearAutoPlay, beginLine]);
+  }, [repertoires, mode, tournamentRepId, initialLineId, clearAutoPlay, beginLine]);
 
   const exitSession = useCallback(() => {
     clearAutoPlay();
@@ -336,16 +343,32 @@ export function PracticeTrainer({
   }
 
   if (!sessionActive) {
-    const { totalLines, linesToPractice } = stats();
+    const { totalLines, linesToPractice, needsLesson } = stats();
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Practice</h1>
           <p className="text-sm text-[var(--muted)] mt-1">
-            ChessReps-style training — play your moves from memory. Make a mistake
-            and you repeat the whole line until you get it right.
+            Play your moves from memory. Make a mistake and you repeat the whole
+            line until it sticks. Learn the line with Shreya first if you&apos;re new
+            to it.
           </p>
         </div>
+
+        {needsLesson > 0 && (
+          <div className="rounded-xl border border-[var(--accent-bright)]/40 bg-[var(--accent)]/10 p-4 text-sm flex items-center justify-between gap-4">
+            <span>
+              {needsLesson} line{needsLesson !== 1 ? "s" : ""} not learned yet —
+              study them before practicing.
+            </span>
+            <Link
+              href="/practice?step=learn"
+              className="shrink-0 rounded-md bg-[var(--accent-bright)] px-3 py-1.5 text-xs text-white"
+            >
+              Learn first
+            </Link>
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-3">
           <StatCard label="Lines to practice" value={linesToPractice} />

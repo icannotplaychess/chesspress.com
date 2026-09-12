@@ -11,7 +11,20 @@ export function createInitialMemory(): LineMemory {
     intervalDays: 0,
     intervalIndex: 0,
     mastery: 0,
+    lessonCompleted: false,
   };
+}
+
+export function recordLessonComplete(memory: LineMemory): LineMemory {
+  return {
+    ...memory,
+    lessonCompleted: true,
+    lastReviewed: todayIso(),
+  };
+}
+
+export function linesNeedingLesson(lines: RepertoireLine[]): number {
+  return lines.filter((l) => !l.memory.lessonCompleted && l.moves.length > 0).length;
 }
 
 export function todayIso(): string {

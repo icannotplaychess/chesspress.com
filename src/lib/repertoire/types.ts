@@ -14,6 +14,8 @@ export interface LineMemory {
   intervalDays: number;
   intervalIndex: number;
   mastery: number;
+  /** True after completing the guided Shreya lesson for this line. */
+  lessonCompleted: boolean;
 }
 
 export interface RepertoireLine {
@@ -48,6 +50,7 @@ export interface PracticeLine {
   repertoireColor: Repertoire["color"];
   lineId: string;
   lineName: string;
+  eco?: string;
   moves: RepertoireMove[];
 }
 

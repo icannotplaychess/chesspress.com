@@ -132,10 +132,10 @@ export function OpeningExplorer() {
           Add to Repertoire
         </button>
         <a
-          href={`/practice?mode=learn_new`}
+          href="/practice?step=learn"
           className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-sm hover:bg-[#222]"
         >
-          Practice
+          Learn & Practice
         </a>
       </div>
 

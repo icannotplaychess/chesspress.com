@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import type { Repertoire, RepertoireLine } from "@/lib/repertoire/types";
 import * as storage from "@/lib/repertoire/storage";
 import {
+  linesNeedingLesson,
   linesNeedingPractice,
   repertoireMastery,
 } from "@/lib/repertoire/spaced-repetition";
@@ -85,6 +86,10 @@ export function useRepertoires() {
       (s, r) => s + linesNeedingPractice(r.lines),
       0
     );
+    const needsLesson = repertoires.reduce(
+      (s, r) => s + linesNeedingLesson(r.lines),
+      0
+    );
     const avgMastery =
       repertoires.length > 0
         ? Math.round(
@@ -92,7 +97,7 @@ export function useRepertoires() {
               repertoires.length
           )
         : 0;
-    return { totalLines, linesToPractice, avgMastery };
+    return { totalLines, linesToPractice, needsLesson, avgMastery };
   }, [repertoires]);
 
   return {

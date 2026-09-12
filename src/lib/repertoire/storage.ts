@@ -1,5 +1,8 @@
 import type { Repertoire, RepertoireLine } from "@/lib/repertoire/types";
-import { createInitialMemory } from "@/lib/repertoire/spaced-repetition";
+import {
+  createInitialMemory,
+  recordLessonComplete,
+} from "@/lib/repertoire/spaced-repetition";
 import { lineFromPgn } from "@/lib/repertoire/pgn";
 
 const STORAGE_KEY = "chesspress_repertoires";
@@ -131,6 +134,24 @@ export function updateLineMemory(
   if (!repertoire) return;
   const line = repertoire.lines.find((l) => l.id === lineId);
   if (!line) return;
-  line.memory = memory;
+  line.memory = {
+    ...createInitialMemory(),
+    ...line.memory,
+    ...memory,
+    lessonCompleted: memory.lessonCompleted ?? line.memory.lessonCompleted ?? false,
+  };
+  updateRepertoire(repertoire);
+}
+
+export function markLessonComplete(repertoireId: string, lineId: string): void {
+  const repertoire = getRepertoire(repertoireId);
+  if (!repertoire) return;
+  const line = repertoire.lines.find((l) => l.id === lineId);
+  if (!line) return;
+  line.memory = recordLessonComplete({
+    ...createInitialMemory(),
+    ...line.memory,
+    lessonCompleted: line.memory.lessonCompleted ?? false,
+  });
   updateRepertoire(repertoire);
 }

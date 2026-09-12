@@ -13,9 +13,9 @@ export default function HomePage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <ActionCard
-          href="/practice"
-          title="Practice Repertoire"
-          description="Train your openings ChessReps-style — repeat the line until you memorize it."
+          href="/practice?step=learn"
+          title="Learn & Practice"
+          description="Shreya teaches each move first, then you drill the line from memory until it sticks."
           primary
         />
         <ActionCard

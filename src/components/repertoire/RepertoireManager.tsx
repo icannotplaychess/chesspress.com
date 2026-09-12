@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRepertoires } from "@/hooks/useRepertoires";
 import {
+  linesNeedingLesson,
   linesNeedingPractice,
   repertoireMastery,
 } from "@/lib/repertoire/spaced-repetition";
@@ -76,6 +77,7 @@ export function RepertoireManager() {
         <div className="grid gap-4">
           {repertoires.map((rep) => {
             const mastery = repertoireMastery(rep.lines);
+            const toLearn = linesNeedingLesson(rep.lines);
             const toPractice = linesNeedingPractice(rep.lines);
             const expanded = expandedId === rep.id;
 
@@ -89,6 +91,7 @@ export function RepertoireManager() {
                     <h2 className="text-lg font-semibold">{rep.name}</h2>
                     <div className="flex flex-wrap gap-3 mt-1 text-xs text-[var(--muted)]">
                       <span>{rep.lines.length} lines</span>
+                      <span>{toLearn} to learn</span>
                       <span>{toPractice} to practice</span>
                       <span>{mastery}% mastery</span>
                       <span className="capitalize">{rep.color}</span>
@@ -102,8 +105,14 @@ export function RepertoireManager() {
                   </div>
                   <div className="flex flex-wrap gap-2 shrink-0">
                     <Link
-                      href={`/practice?mode=tournament&rep=${rep.id}`}
+                      href={`/practice?step=learn&rep=${rep.id}`}
                       className="rounded-md bg-[var(--accent-bright)] px-3 py-1.5 text-xs text-white"
+                    >
+                      Learn
+                    </Link>
+                    <Link
+                      href={`/practice?step=practice&mode=tournament&rep=${rep.id}`}
+                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[#222]"
                     >
                       Practice
                     </Link>
@@ -177,10 +186,18 @@ export function RepertoireManager() {
                               {line.moves.map((m) => m.san).join(" ")}
                             </div>
                             <div className="text-xs text-[var(--muted)] mt-0.5">
+                              {line.memory.lessonCompleted ? "Learned" : "Not learned"} ·{" "}
                               {line.memory.mastery}% mastery ·{" "}
-                              {line.memory.correctAttempts} clean runs ·{" "}
-                              {line.memory.incorrectAttempts} mistakes
+                              {line.memory.correctAttempts} clean runs
                             </div>
+                            {!line.memory.lessonCompleted && (
+                              <Link
+                                href={`/practice?step=learn&rep=${rep.id}&line=${line.id}`}
+                                className="text-xs text-[var(--accent-text)] hover:underline mt-1 inline-block"
+                              >
+                                Learn with Shreya →
+                              </Link>
+                            )}
                           </div>
                           <div className="flex gap-2 shrink-0">
                             <button
