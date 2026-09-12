@@ -7,21 +7,31 @@ export default function HomePage() {
         Welcome to <span className="text-[var(--accent-text)]">ChessPress</span>
       </h1>
       <p className="text-lg text-[var(--muted)] mb-8 leading-relaxed">
-        Your chess improvement platform with Stockfish analysis, Lichess opening
-        data, adaptive training, and Shreya — your personal AI coach.
+        Your chess improvement platform with adaptive opening training, Stockfish
+        analysis, Lichess data, and Shreya — your personal AI coach.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <ActionCard
-          href="/analysis"
-          title="Analysis Board"
-          description="Analyze any position with Stockfish, explore openings from the Lichess database, and get coach explanations."
+          href="/practice"
+          title="Practice Repertoire"
+          description="Train your openings with active recall and spaced repetition. The system schedules what you need to review."
           primary
         />
         <ActionCard
+          href="/explorer"
+          title="Explore Openings"
+          description="Browse openings with Lichess statistics and Stockfish analysis. Add lines directly to your repertoire."
+        />
+        <ActionCard
+          href="/repertoires"
+          title="Repertoires"
+          description="Create, manage, and track mastery across multiple opening repertoires."
+        />
+        <ActionCard
           href="/analysis"
-          title="Import a Game"
-          description="Load a PGN on the Analysis Board to review every move with engine classifications."
+          title="Analysis Board"
+          description="Analyze any position with Stockfish, explore the database, and get coach explanations."
         />
       </div>
     </div>

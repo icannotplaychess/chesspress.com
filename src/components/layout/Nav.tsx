@@ -5,11 +5,10 @@ import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard" },
+  { href: "/explorer", label: "Opening Explorer" },
+  { href: "/repertoires", label: "Repertoires" },
+  { href: "/practice", label: "Practice" },
   { href: "/analysis", label: "Analysis Board" },
-  { href: "/analysis", label: "Opening Explorer", disabled: true },
-  { href: "/analysis", label: "Repertoires", disabled: true },
-  { href: "/analysis", label: "Practice", disabled: true },
-  { href: "/analysis", label: "Game Review", disabled: true },
 ];
 
 export function Nav() {
@@ -26,19 +25,16 @@ export function Nav() {
 
         <nav className="hidden md:flex items-center gap-1">
           {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href && !item.disabled;
+            const isActive = pathname === item.href;
             return (
               <Link
-                key={item.label}
-                href={item.disabled ? "#" : item.href}
+                key={item.href}
+                href={item.href}
                 className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                  item.disabled
-                    ? "text-[var(--muted)]/50 cursor-not-allowed"
-                    : isActive
-                      ? "bg-[var(--accent)] text-white"
-                      : "text-[var(--muted)] hover:text-foreground hover:bg-[#222]"
+                  isActive
+                    ? "bg-[var(--accent)] text-white"
+                    : "text-[var(--muted)] hover:text-foreground hover:bg-[#222]"
                 }`}
-                onClick={item.disabled ? (e) => e.preventDefault() : undefined}
               >
                 {item.label}
               </Link>
