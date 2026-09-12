@@ -15,7 +15,7 @@ export default function HomePage() {
         <ActionCard
           href="/practice"
           title="Practice Repertoire"
-          description="Train your openings with active recall and spaced repetition. The system schedules what you need to review."
+          description="Train your openings ChessReps-style — repeat the line until you memorize it."
           primary
         />
         <ActionCard

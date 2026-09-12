@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRepertoires } from "@/hooks/useRepertoires";
 import {
-  linesDueToday,
+  linesNeedingPractice,
   repertoireMastery,
 } from "@/lib/repertoire/spaced-repetition";
 import { lineToPgn, repertoireToPgn } from "@/lib/repertoire/pgn";
@@ -40,7 +40,7 @@ export function RepertoireManager() {
         <div>
           <h1 className="text-2xl font-bold">Repertoires</h1>
           <p className="text-sm text-[var(--muted)] mt-1">
-            Build and manage your opening repertoires with spaced repetition tracking.
+            Build and manage your opening repertoires. Practice until every line is memorized.
           </p>
         </div>
         <button
@@ -76,7 +76,7 @@ export function RepertoireManager() {
         <div className="grid gap-4">
           {repertoires.map((rep) => {
             const mastery = repertoireMastery(rep.lines);
-            const due = linesDueToday(rep.lines);
+            const toPractice = linesNeedingPractice(rep.lines);
             const expanded = expandedId === rep.id;
 
             return (
@@ -89,7 +89,7 @@ export function RepertoireManager() {
                     <h2 className="text-lg font-semibold">{rep.name}</h2>
                     <div className="flex flex-wrap gap-3 mt-1 text-xs text-[var(--muted)]">
                       <span>{rep.lines.length} lines</span>
-                      <span>{due} due today</span>
+                      <span>{toPractice} to practice</span>
                       <span>{mastery}% mastery</span>
                       <span className="capitalize">{rep.color}</span>
                     </div>
@@ -177,8 +177,9 @@ export function RepertoireManager() {
                               {line.moves.map((m) => m.san).join(" ")}
                             </div>
                             <div className="text-xs text-[var(--muted)] mt-0.5">
-                              {line.memory.mastery}% mastery · next review{" "}
-                              {line.memory.nextReview ?? "today"}
+                              {line.memory.mastery}% mastery ·{" "}
+                              {line.memory.correctAttempts} clean runs ·{" "}
+                              {line.memory.incorrectAttempts} mistakes
                             </div>
                           </div>
                           <div className="flex gap-2 shrink-0">

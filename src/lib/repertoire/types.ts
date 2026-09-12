@@ -42,6 +42,15 @@ export type PracticeMode =
   | "tournament"
   | "random";
 
+export interface PracticeLine {
+  repertoireId: string;
+  repertoireName: string;
+  repertoireColor: Repertoire["color"];
+  lineId: string;
+  lineName: string;
+  moves: RepertoireMove[];
+}
+
 export interface PracticePosition {
   repertoireId: string;
   repertoireName: string;

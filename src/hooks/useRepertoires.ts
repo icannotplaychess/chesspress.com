@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import type { Repertoire, RepertoireLine } from "@/lib/repertoire/types";
 import * as storage from "@/lib/repertoire/storage";
 import {
-  linesDueToday,
+  linesNeedingPractice,
   repertoireMastery,
 } from "@/lib/repertoire/spaced-repetition";
 
@@ -81,8 +81,8 @@ export function useRepertoires() {
 
   const stats = useCallback(() => {
     const totalLines = repertoires.reduce((s, r) => s + r.lines.length, 0);
-    const dueToday = repertoires.reduce(
-      (s, r) => s + linesDueToday(r.lines),
+    const linesToPractice = repertoires.reduce(
+      (s, r) => s + linesNeedingPractice(r.lines),
       0
     );
     const avgMastery =
@@ -92,7 +92,7 @@ export function useRepertoires() {
               repertoires.length
           )
         : 0;
-    return { totalLines, dueToday, avgMastery };
+    return { totalLines, linesToPractice, avgMastery };
   }, [repertoires]);
 
   return {

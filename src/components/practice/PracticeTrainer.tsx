@@ -1,24 +1,44 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Chessboard } from "react-chessboard";
 import { Chess, type Square } from "chess.js";
 import Link from "next/link";
 import { useRepertoires } from "@/hooks/useRepertoires";
-import { buildPracticeQueue } from "@/lib/repertoire/scheduler";
 import {
-  recordCorrect,
-  recordIncorrect,
+  boardOrientation,
+  buildLineQueue,
+  isUserMove,
+  START_FEN,
+} from "@/lib/repertoire/practice-session";
+import {
+  recordLineComplete,
+  recordMistake,
 } from "@/lib/repertoire/spaced-repetition";
 import * as storage from "@/lib/repertoire/storage";
-import type { PracticeMode, PracticePosition } from "@/lib/repertoire/types";
+import type { PracticeLine, PracticeMode } from "@/lib/repertoire/types";
 
 const MODES: { id: PracticeMode; label: string; description: string }[] = [
-  { id: "mixed", label: "Mixed Practice", description: "Adaptive mix across all repertoires" },
-  { id: "review_due", label: "Review Due", description: "Lines scheduled for today" },
-  { id: "learn_new", label: "Learn New", description: "Lines never studied before" },
-  { id: "weakest", label: "Weakest Lines", description: "Lowest mastery first" },
-  { id: "random", label: "Random", description: "Random variations" },
+  {
+    id: "mixed",
+    label: "Mixed Practice",
+    description: "All lines — weaker ones come up more often",
+  },
+  {
+    id: "learn_new",
+    label: "Learn New",
+    description: "Lines you haven't completed yet",
+  },
+  {
+    id: "weakest",
+    label: "Weakest Lines",
+    description: "Focus on lines you struggle with most",
+  },
+  {
+    id: "random",
+    label: "Random",
+    description: "Random variations from your repertoire",
+  },
 ];
 
 interface PracticeTrainerProps {
@@ -33,40 +53,172 @@ export function PracticeTrainer({
   const { repertoires, loaded, stats } = useRepertoires();
   const [mode, setMode] = useState<PracticeMode>(initialMode);
   const [sessionActive, setSessionActive] = useState(false);
-  const [queue, setQueue] = useState<PracticePosition[]>([]);
-  const [queueIndex, setQueueIndex] = useState(0);
+  const [lineQueue, setLineQueue] = useState<PracticeLine[]>([]);
+  const [lineIndex, setLineIndex] = useState(0);
+  const [moveIndex, setMoveIndex] = useState(0);
+  const [fen, setFen] = useState(START_FEN);
+  const [orientation, setOrientation] = useState<"white" | "black">("white");
+  const [waitingForUser, setWaitingForUser] = useState(false);
+  const [mistakesThisLine, setMistakesThisLine] = useState(0);
+  const [sessionStats, setSessionStats] = useState({
+    linesCompleted: 0,
+    mistakes: 0,
+  });
   const [feedback, setFeedback] = useState<{
-    type: "correct" | "incorrect" | "hint" | null;
+    type: "correct" | "incorrect" | "complete" | "line-complete" | null;
     message: string;
   }>({ type: null, message: "" });
   const [showHint, setShowHint] = useState(false);
-  const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0 });
-  const [orientation, setOrientation] = useState<"white" | "black">("white");
+  const autoPlayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const goToNextLineRef = useRef<
+    (lines: PracticeLine[], currentIdx: number, completedCount: number) => void
+  >(() => {});
 
-  const current = queue[queueIndex] ?? null;
+  const currentLine = lineQueue[lineIndex] ?? null;
+  const userMoveCount = currentLine
+    ? currentLine.moves.filter((_, i) =>
+        isUserMove(currentLine.repertoireColor, i)
+      ).length
+    : 0;
+  const userMoveNumber = currentLine
+    ? currentLine.moves
+        .slice(0, moveIndex + 1)
+        .filter((_, i) => isUserMove(currentLine.repertoireColor, i)).length
+    : 0;
 
-  const startSession = useCallback(() => {
-    const positions = buildPracticeQueue(repertoires, mode, tournamentRepId);
-    if (positions.length === 0) {
-      setFeedback({
-        type: null,
-        message: "No lines available for this mode. Add lines to your repertoire first.",
-      });
-      return;
+  const clearAutoPlay = useCallback(() => {
+    if (autoPlayTimer.current) {
+      clearTimeout(autoPlayTimer.current);
+      autoPlayTimer.current = null;
     }
-    setQueue(positions);
-    setQueueIndex(0);
-    setSessionActive(true);
-    setSessionStats({ correct: 0, incorrect: 0 });
-    setFeedback({ type: null, message: "" });
-    setShowHint(false);
-  }, [repertoires, mode, tournamentRepId]);
+  }, []);
+
+  const persistMemory = useCallback(
+    (line: PracticeLine, memory: ReturnType<typeof recordMistake>) => {
+      storage.updateLineMemory(line.repertoireId, line.lineId, memory);
+    },
+    []
+  );
+
+  const autoPlayToUserTurn = useCallback(
+    (line: PracticeLine, fromIndex: number, currentFen: string) => {
+      clearAutoPlay();
+      let idx = fromIndex;
+      let boardFen = currentFen;
+
+      const step = () => {
+        if (idx >= line.moves.length) {
+          const rep = storage.getRepertoire(line.repertoireId);
+          const storedLine = rep?.lines.find((l) => l.id === line.lineId);
+          if (storedLine) {
+            const updated = recordLineComplete(storedLine.memory);
+            persistMemory(line, updated);
+          }
+          setSessionStats((s) => ({ ...s, linesCompleted: s.linesCompleted + 1 }));
+          setFeedback({
+            type: "line-complete",
+            message: `Line complete! ${line.lineName}`,
+          });
+          setWaitingForUser(false);
+
+          autoPlayTimer.current = setTimeout(() => {
+            goToNextLineRef.current(
+              lineQueue,
+              lineIndex,
+              sessionStats.linesCompleted + 1
+            );
+          }, 1200);
+          return;
+        }
+
+        if (isUserMove(line.repertoireColor, idx)) {
+          setMoveIndex(idx);
+          setFen(boardFen);
+          setWaitingForUser(true);
+          setFeedback({ type: null, message: "" });
+          setShowHint(false);
+          return;
+        }
+
+        const move = line.moves[idx];
+        setFen(move.fen);
+        setMoveIndex(idx);
+        boardFen = move.fen;
+        idx += 1;
+        autoPlayTimer.current = setTimeout(step, 450);
+      };
+
+      step();
+    },
+    [clearAutoPlay, lineIndex, lineQueue, persistMemory, sessionStats.linesCompleted]
+  );
+
+  const beginLine = useCallback(
+    (line: PracticeLine) => {
+      clearAutoPlay();
+      setMistakesThisLine(0);
+      setMoveIndex(0);
+      setFen(START_FEN);
+      setOrientation(boardOrientation(line.repertoireColor));
+      setFeedback({ type: null, message: "" });
+      setShowHint(false);
+
+      if (isUserMove(line.repertoireColor, 0)) {
+        setWaitingForUser(true);
+      } else {
+        setWaitingForUser(false);
+        autoPlayToUserTurn(line, 0, START_FEN);
+      }
+    },
+    [autoPlayToUserTurn, clearAutoPlay]
+  );
+
+  const goToNextLine = useCallback(
+    (lines: PracticeLine[], currentIdx: number, completedCount: number) => {
+      const next = currentIdx + 1;
+      if (next < lines.length) {
+        setLineIndex(next);
+        beginLine(lines[next]);
+      } else {
+        setSessionActive(false);
+        setFeedback({
+          type: "complete",
+          message: `Session complete! ${completedCount} lines memorized.`,
+        });
+      }
+    },
+    [beginLine]
+  );
+
+  useEffect(() => {
+    goToNextLineRef.current = goToNextLine;
+  }, [goToNextLine]);
+
+  const restartLine = useCallback(
+    (line: PracticeLine, message: string) => {
+      setMistakesThisLine((m) => m + 1);
+      setSessionStats((s) => ({ ...s, mistakes: s.mistakes + 1 }));
+      setFeedback({ type: "incorrect", message });
+      setWaitingForUser(false);
+
+      const rep = storage.getRepertoire(line.repertoireId);
+      const storedLine = rep?.lines.find((l) => l.id === line.lineId);
+      if (storedLine) {
+        persistMemory(line, recordMistake(storedLine.memory));
+      }
+
+      autoPlayTimer.current = setTimeout(() => {
+        beginLine(line);
+      }, 1500);
+    },
+    [beginLine, persistMemory]
+  );
 
   const handleMove = useCallback(
     (from: string, to: string, promotion?: string): boolean => {
-      if (!current) return false;
+      if (!currentLine || !waitingForUser) return false;
 
-      const chess = new Chess(current.fen);
+      const chess = new Chess(fen);
       const result = chess.move({
         from,
         to,
@@ -75,53 +227,64 @@ export function PracticeTrainer({
       if (!result) return false;
 
       const playedUci = result.from + result.to + (result.promotion ?? "");
-      const expectedUci = current.expectedMove.uci;
-      const isCorrect = playedUci === expectedUci;
+      const expected = currentLine.moves[moveIndex];
+      const isCorrect = playedUci === expected.uci;
 
-      const rep = storage.getRepertoire(current.repertoireId);
-      const line = rep?.lines.find((l) => l.id === current.lineId);
-      if (line) {
-        line.memory = isCorrect
-          ? recordCorrect(line.memory)
-          : recordIncorrect(line.memory);
-        storage.updateLineMemory(
-          current.repertoireId,
-          current.lineId,
-          line.memory
+      if (!isCorrect) {
+        restartLine(
+          currentLine,
+          `Wrong — the move was ${expected.san}. Restarting the line…`
         );
+        return false;
       }
 
-      if (isCorrect) {
-        setSessionStats((s) => ({ ...s, correct: s.correct + 1 }));
+      setFeedback({
+        type: "correct",
+        message: `Correct! ${expected.san}`,
+      });
+      setWaitingForUser(false);
+
+      const nextIndex = moveIndex + 1;
+      if (nextIndex >= currentLine.moves.length) {
+        const rep = storage.getRepertoire(currentLine.repertoireId);
+        const storedLine = rep?.lines.find((l) => l.id === currentLine.lineId);
+        if (storedLine) {
+          persistMemory(currentLine, recordLineComplete(storedLine.memory));
+        }
+        setSessionStats((s) => ({ ...s, linesCompleted: s.linesCompleted + 1 }));
         setFeedback({
-          type: "correct",
-          message: `Correct! ${current.expectedMove.san} — ${current.lineName}`,
+          type: "line-complete",
+          message: `Line complete! ${currentLine.lineName}`,
         });
 
-        setTimeout(() => {
-          if (queueIndex + 1 < queue.length) {
-            setQueueIndex((i) => i + 1);
-            setFeedback({ type: null, message: "" });
-            setShowHint(false);
-          } else {
-            setSessionActive(false);
-            setFeedback({
-              type: "correct",
-              message: `Session complete! ${sessionStats.correct + 1} correct.`,
-            });
-          }
-        }, 800);
-      } else {
-        setSessionStats((s) => ({ ...s, incorrect: s.incorrect + 1 }));
-        setFeedback({
-          type: "incorrect",
-          message: `Not quite. The correct move was ${current.expectedMove.san}. Try to remember it for next time.`,
-        });
+        autoPlayTimer.current = setTimeout(() => {
+          goToNextLineRef.current(
+            lineQueue,
+            lineIndex,
+            sessionStats.linesCompleted + 1
+          );
+        }, 1200);
+        return true;
       }
 
-      return isCorrect;
+      autoPlayTimer.current = setTimeout(() => {
+        autoPlayToUserTurn(currentLine, nextIndex, expected.fen);
+      }, 400);
+
+      return true;
     },
-    [current, queueIndex, queue.length, sessionStats.correct]
+    [
+      currentLine,
+      waitingForUser,
+      fen,
+      moveIndex,
+      restartLine,
+      autoPlayToUserTurn,
+      persistMemory,
+      lineIndex,
+      lineQueue,
+      sessionStats.linesCompleted,
+    ]
   );
 
   const onPieceDrop = useCallback(
@@ -132,8 +295,8 @@ export function PracticeTrainer({
       sourceSquare: string;
       targetSquare: string | null;
     }) => {
-      if (!targetSquare || !current) return false;
-      const chess = new Chess(current.fen);
+      if (!targetSquare || !waitingForUser) return false;
+      const chess = new Chess(fen);
       const piece = chess.get(sourceSquare as Square);
       const isPromotion =
         piece?.type === "p" &&
@@ -141,31 +304,51 @@ export function PracticeTrainer({
           (piece.color === "b" && targetSquare[1] === "1"));
       return handleMove(sourceSquare, targetSquare, isPromotion ? "q" : undefined);
     },
-    [current, handleMove]
+    [fen, waitingForUser, handleMove]
   );
 
-  const progress = useMemo(() => {
-    if (queue.length === 0) return 0;
-    return Math.round((queueIndex / queue.length) * 100);
-  }, [queueIndex, queue.length]);
+  const startSession = useCallback(() => {
+    const lines = buildLineQueue(repertoires, mode, tournamentRepId);
+    if (lines.length === 0) {
+      setFeedback({
+        type: null,
+        message: "No lines available. Add lines to your repertoire first.",
+      });
+      return;
+    }
+    clearAutoPlay();
+    setLineQueue(lines);
+    setLineIndex(0);
+    setSessionActive(true);
+    setSessionStats({ linesCompleted: 0, mistakes: 0 });
+    setFeedback({ type: null, message: "" });
+    beginLine(lines[0]);
+  }, [repertoires, mode, tournamentRepId, clearAutoPlay, beginLine]);
+
+  const exitSession = useCallback(() => {
+    clearAutoPlay();
+    setSessionActive(false);
+    setWaitingForUser(false);
+  }, [clearAutoPlay]);
 
   if (!loaded) {
     return <p className="text-[var(--muted)]">Loading…</p>;
   }
 
   if (!sessionActive) {
-    const { dueToday, totalLines } = stats();
+    const { totalLines, linesToPractice } = stats();
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Practice</h1>
           <p className="text-sm text-[var(--muted)] mt-1">
-            Active recall with adaptive spaced repetition. What is the correct move?
+            ChessReps-style training — play your moves from memory. Make a mistake
+            and you repeat the whole line until you get it right.
           </p>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <StatCard label="Due today" value={dueToday} />
+          <StatCard label="Lines to practice" value={linesToPractice} />
           <StatCard label="Total lines" value={totalLines} />
           <StatCard label="Repertoires" value={repertoires.length} />
         </div>
@@ -217,13 +400,17 @@ export function PracticeTrainer({
     );
   }
 
+  const lineProgress =
+    lineQueue.length > 0
+      ? Math.round((lineIndex / lineQueue.length) * 100)
+      : 0;
+
   return (
     <div className="flex flex-col items-center gap-4 max-w-lg mx-auto">
-      {/* Minimal practice UI per docs */}
       <div className="w-full flex items-center justify-between text-sm">
-        <span className="text-[var(--muted)]">{current?.repertoireName}</span>
+        <span className="text-[var(--muted)]">{currentLine?.repertoireName}</span>
         <button
-          onClick={() => setSessionActive(false)}
+          onClick={exitSession}
           className="text-[var(--muted)] hover:text-foreground"
         >
           Exit
@@ -233,28 +420,30 @@ export function PracticeTrainer({
       <div className="w-full h-1.5 rounded-full bg-[#222] overflow-hidden">
         <div
           className="h-full bg-[var(--accent-bright)] transition-all"
-          style={{ width: `${progress}%` }}
+          style={{ width: `${lineProgress}%` }}
         />
       </div>
 
       <p className="text-sm text-center">
-        <span className="text-[var(--accent-text)]">{current?.lineName}</span>
+        <span className="text-[var(--accent-text)]">{currentLine?.lineName}</span>
         <span className="text-[var(--muted)]">
-          {" "}· Move {current ? current.moveIndex + 1 : 0} of {current?.totalMoves}
+          {" "}
+          · Line {lineIndex + 1} of {lineQueue.length}
+          {userMoveCount > 0 && ` · Your move ${userMoveNumber} of ${userMoveCount}`}
         </span>
       </p>
 
       <p className="text-lg font-medium text-center">
-        What is the correct move here?
+        {waitingForUser ? "Play the correct move" : "Watch opponent moves…"}
       </p>
 
       <div className="w-full max-w-[400px] aspect-square">
         <Chessboard
           options={{
-            position: current?.fen ?? "start",
+            position: fen,
             boardOrientation: orientation,
             onPieceDrop,
-            allowDragging: true,
+            allowDragging: waitingForUser,
             darkSquareStyle: { backgroundColor: "#2d4a6f" },
             lightSquareStyle: { backgroundColor: "#4a6fa5" },
             boardStyle: {
@@ -270,7 +459,7 @@ export function PracticeTrainer({
       {feedback.type && (
         <div
           className={`w-full rounded-lg px-4 py-3 text-sm text-center ${
-            feedback.type === "correct"
+            feedback.type === "correct" || feedback.type === "line-complete"
               ? "bg-[var(--success)]/20 text-[var(--success)]"
               : feedback.type === "incorrect"
                 ? "bg-[var(--danger)]/20 text-[var(--danger)]"
@@ -284,13 +473,15 @@ export function PracticeTrainer({
       <div className="flex gap-3">
         <button
           onClick={() => {
+            if (!currentLine || !waitingForUser) return;
             setShowHint(true);
+            const expected = currentLine.moves[moveIndex];
             setFeedback({
-              type: "hint",
-              message: `Hint: the move starts on ${current?.expectedMove.uci.slice(0, 2)}`,
+              type: null,
+              message: `Hint: the move starts on ${expected.uci.slice(0, 2)}`,
             });
           }}
-          disabled={showHint}
+          disabled={showHint || !waitingForUser}
           className="rounded-md border border-[var(--panel-border)] px-4 py-2 text-sm disabled:opacity-40"
         >
           Hint
@@ -304,7 +495,8 @@ export function PracticeTrainer({
       </div>
 
       <p className="text-xs text-[var(--muted)]">
-        {sessionStats.correct} correct · {sessionStats.incorrect} incorrect
+        {sessionStats.linesCompleted} lines completed · {sessionStats.mistakes} mistakes
+        {mistakesThisLine > 0 && ` · ${mistakesThisLine} restarts this line`}
       </p>
     </div>
   );

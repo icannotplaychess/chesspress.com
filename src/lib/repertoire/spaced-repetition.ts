@@ -1,16 +1,13 @@
 import type { LineMemory, RepertoireLine } from "@/lib/repertoire/types";
 
-/** Review intervals in days per docs (02_FEATURES.md). */
-export const REVIEW_INTERVALS = [0, 1, 3, 7, 14, 30, 90];
-
+/** Session-based progress — ChessReps style, not calendar scheduling. */
 export function createInitialMemory(): LineMemory {
-  const today = todayIso();
   return {
     correctAttempts: 0,
     incorrectAttempts: 0,
     confidence: 0,
     lastReviewed: null,
-    nextReview: today,
+    nextReview: null,
     intervalDays: 0,
     intervalIndex: 0,
     mastery: 0,
@@ -21,49 +18,8 @@ export function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function addDays(dateIso: string, days: number): string {
-  const d = new Date(dateIso + "T12:00:00");
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-export function isDue(memory: LineMemory, today = todayIso()): boolean {
-  if (!memory.nextReview) return true;
-  return memory.nextReview <= today;
-}
-
-export function isNewLine(memory: LineMemory): boolean {
-  return memory.correctAttempts === 0 && memory.incorrectAttempts === 0;
-}
-
-export function recordCorrect(memory: LineMemory): LineMemory {
-  const nextIndex = Math.min(
-    memory.intervalIndex + 1,
-    REVIEW_INTERVALS.length - 1
-  );
-  const intervalDays = REVIEW_INTERVALS[nextIndex];
-  const today = todayIso();
-
-  const correctAttempts = memory.correctAttempts + 1;
-  const mastery = Math.min(
-    100,
-    Math.round((correctAttempts / (correctAttempts + memory.incorrectAttempts + 1)) * 100)
-  );
-
-  return {
-    ...memory,
-    correctAttempts,
-    intervalIndex: nextIndex,
-    intervalDays,
-    lastReviewed: today,
-    nextReview: addDays(today, intervalDays),
-    confidence: Math.min(100, memory.confidence + 10),
-    mastery,
-  };
-}
-
-export function recordIncorrect(memory: LineMemory): LineMemory {
-  const today = todayIso();
+/** Called when the user makes a wrong move and must restart the line. */
+export function recordMistake(memory: LineMemory): LineMemory {
   const incorrectAttempts = memory.incorrectAttempts + 1;
   const mastery = Math.max(
     0,
@@ -77,21 +33,29 @@ export function recordIncorrect(memory: LineMemory): LineMemory {
   return {
     ...memory,
     incorrectAttempts,
-    intervalIndex: 0,
-    intervalDays: 0,
-    lastReviewed: today,
-    nextReview: today,
-    confidence: Math.max(0, memory.confidence - 15),
+    confidence: Math.max(0, memory.confidence - 10),
     mastery,
+    lastReviewed: todayIso(),
   };
 }
 
-export function linePriority(line: RepertoireLine, today = todayIso()): number {
-  const m = line.memory;
-  if (isDue(m, today) && !isNewLine(m)) return 1000 - m.mastery;
-  if (isNewLine(m)) return 500;
-  if (m.incorrectAttempts > 0 && isDue(m, today)) return 800 - m.mastery;
-  return m.mastery;
+/** Called when the user completes a full line without mistakes in that run. */
+export function recordLineComplete(memory: LineMemory): LineMemory {
+  const correctAttempts = memory.correctAttempts + 1;
+  const mastery = Math.min(
+    100,
+    Math.round(
+      (correctAttempts / (correctAttempts + memory.incorrectAttempts + 1)) * 100
+    ) + (correctAttempts >= 3 ? 20 : 0)
+  );
+
+  return {
+    ...memory,
+    correctAttempts,
+    confidence: Math.min(100, memory.confidence + 15),
+    mastery: Math.min(100, mastery),
+    lastReviewed: todayIso(),
+  };
 }
 
 export function repertoireMastery(lines: RepertoireLine[]): number {
@@ -101,6 +65,15 @@ export function repertoireMastery(lines: RepertoireLine[]): number {
   );
 }
 
-export function linesDueToday(lines: RepertoireLine[], today = todayIso()): number {
-  return lines.filter((l) => isDue(l.memory, today)).length;
+export function linesNeedingPractice(lines: RepertoireLine[]): number {
+  return lines.filter((l) => l.memory.mastery < 100).length;
+}
+
+/** @deprecated Use linesNeedingPractice — kept for compatibility */
+export function linesDueToday(lines: RepertoireLine[]): number {
+  return linesNeedingPractice(lines);
+}
+
+export function isNewLine(memory: LineMemory): boolean {
+  return memory.correctAttempts === 0 && memory.incorrectAttempts === 0;
 }
