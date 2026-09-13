@@ -15,7 +15,9 @@ export function CoachPanel({ message }: CoachPanelProps) {
           <h3 className="text-sm font-semibold text-[var(--accent-text)] mb-1">
             Shreya
           </h3>
-          <p className="text-sm leading-relaxed text-foreground/90">{message}</p>
+          <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-line">
+            {message}
+          </p>
         </div>
       </div>
     </div>

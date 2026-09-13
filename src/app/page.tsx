@@ -7,21 +7,51 @@ export default function HomePage() {
         Welcome to <span className="text-[var(--accent-text)]">ChessPress</span>
       </h1>
       <p className="text-lg text-[var(--muted)] mb-8 leading-relaxed">
-        Your chess improvement platform with Stockfish analysis, Lichess opening
-        data, adaptive training, and Shreya — your personal AI coach.
+        Your chess improvement platform with adaptive opening training, Player Scout,
+        Stockfish analysis, and Shreya — your personal AI coach.
       </p>
+
+      <div className="flex gap-3 mb-10">
+        <Link
+          href="/auth/signup"
+          className="rounded-lg bg-[var(--accent-bright)] px-6 py-2.5 text-sm font-medium text-white"
+        >
+          Create free account
+        </Link>
+        <Link
+          href="/auth/signin"
+          className="rounded-lg border border-[var(--panel-border)] px-6 py-2.5 text-sm"
+        >
+          Sign in
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <ActionCard
-          href="/analysis"
-          title="Analysis Board"
-          description="Analyze any position with Stockfish, explore openings from the Lichess database, and get coach explanations."
+          href="/scout"
+          title="Player Scout"
+          description="Analyze your chess or scout any public player on Chess.com or Lichess."
           primary
         />
         <ActionCard
+          href="/practice?step=learn"
+          title="Learn & Practice"
+          description="Shreya teaches each move first, then you drill the line from memory until it sticks."
+        />
+        <ActionCard
+          href="/explorer"
+          title="Explore Openings"
+          description="Browse openings with Lichess statistics and Stockfish analysis. Add lines directly to your repertoire."
+        />
+        <ActionCard
+          href="/repertoires"
+          title="Repertoires"
+          description="Create, manage, and track mastery across multiple opening repertoires."
+        />
+        <ActionCard
           href="/analysis"
-          title="Import a Game"
-          description="Load a PGN on the Analysis Board to review every move with engine classifications."
+          title="Analysis Board"
+          description="Analyze any position with Stockfish, explore the database, and get coach explanations."
         />
       </div>
     </div>
