@@ -1,5 +1,6 @@
-import { auth } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 const PROTECTED_PREFIXES = [
   "/dashboard",
@@ -10,11 +11,22 @@ const PROTECTED_PREFIXES = [
   "/games",
 ];
 
-const AUTH_PAGES = ["/auth/signin", "/auth/signup", "/auth/forgot-password", "/auth/reset-password"];
+const AUTH_PAGES = [
+  "/auth/signin",
+  "/auth/signup",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+];
 
-export default auth((req) => {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const isLoggedIn = !!req.auth;
+
+  const token = await getToken({
+    req,
+    secret: process.env.AUTH_SECRET,
+    secureCookie: process.env.NODE_ENV === "production",
+  });
+  const isLoggedIn = !!token;
 
   const isProtected = PROTECTED_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
@@ -32,7 +44,7 @@ export default auth((req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
