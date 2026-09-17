@@ -12,7 +12,9 @@ export async function GET() {
         process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
       ),
       hasAuthSecret: Boolean(process.env.AUTH_SECRET),
-      hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
+      hasDatabaseUrl: Boolean(
+        process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL
+      ),
     });
   } catch (err) {
     console.error("[health]", err);
@@ -22,7 +24,7 @@ export async function GET() {
         database: "error",
         message: err instanceof Error ? err.message : "Database unreachable",
         hint:
-          "Set DATABASE_URL to your Vercel Postgres URL. Try POSTGRES_URL_NON_POOLING if the pooled URL fails.",
+          "Connect Vercel Postgres (sets POSTGRES_PRISMA_URL automatically) or set DATABASE_URL to your pooled Postgres URL.",
       },
       { status: 503 }
     );
