@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { hasDatabaseConfig } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import { hashPassword, validatePassword } from "@/lib/auth/password";
 
@@ -10,6 +11,16 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
+  if (!hasDatabaseConfig()) {
+    return NextResponse.json(
+      {
+        error:
+          "Server database is not configured. Link Vercel Postgres or set DATABASE_URL.",
+      },
+      { status: 503 }
+    );
+  }
+
   try {
     const body = await request.json();
     const parsed = schema.safeParse(body);

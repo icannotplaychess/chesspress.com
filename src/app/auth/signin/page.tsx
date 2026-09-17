@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
+import { AuthDivider } from "@/components/auth/AuthDivider";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 
 function SignInForm() {
@@ -81,15 +82,7 @@ function SignInForm() {
         </button>
       </form>
 
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-[var(--panel-border)]" />
-        </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="bg-[var(--panel)] px-2 text-[var(--muted)]">or</span>
-        </div>
-      </div>
-
+      <AuthDivider />
       <GoogleButton callbackUrl={callbackUrl} />
 
       <p className="mt-6 text-center text-sm text-[var(--muted)]">
