@@ -1,8 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 
 export function GoogleButton({ callbackUrl = "/dashboard" }: { callbackUrl?: string }) {
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/config")
+      .then((res) => res.json())
+      .then((data) => setEnabled(Boolean(data.google)))
+      .catch(() => setEnabled(false));
+  }, []);
+
+  if (!enabled) return null;
+
   return (
     <button
       type="button"
