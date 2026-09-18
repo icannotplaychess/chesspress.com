@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ensureSchema, isSchemaReady } from "@/lib/ensure-schema";
 import { hasDatabaseConfig } from "@/lib/env";
 import { prisma } from "@/lib/db";
 
@@ -8,6 +9,8 @@ export async function GET() {
     DATABASE_URL: Boolean(process.env.DATABASE_URL),
     POSTGRES_PRISMA_URL: Boolean(process.env.POSTGRES_PRISMA_URL),
     POSTGRES_URL_NON_POOLING: Boolean(process.env.POSTGRES_URL_NON_POOLING),
+    // POSTGRES_URL is often false on Vercel — that is normal; use POSTGRES_PRISMA_URL.
+    POSTGRES_URL: Boolean(process.env.POSTGRES_URL),
     AUTH_URL: Boolean(process.env.AUTH_URL ?? process.env.NEXTAUTH_URL),
   };
 
@@ -19,7 +22,7 @@ export async function GET() {
         dbConfig,
         hasAuthSecret: Boolean(process.env.AUTH_SECRET),
         hint:
-          "In Vercel → Storage → create/link Postgres, or set DATABASE_URL to your pooled Postgres URL.",
+          "Link Vercel Postgres (Storage → Connect). Vercel sets POSTGRES_PRISMA_URL — you do NOT need POSTGRES_URL.",
       },
       { status: 503 }
     );
@@ -28,13 +31,15 @@ export async function GET() {
   try {
     await prisma.$queryRaw`SELECT 1`;
 
-    let tablesReady = false;
+    let tablesReady = await isSchemaReady();
+    if (!tablesReady) {
+      const bootstrap = await ensureSchema();
+      tablesReady = bootstrap.ok && (await isSchemaReady());
+    }
+
     let userCount: number | null = null;
-    try {
+    if (tablesReady) {
       userCount = await prisma.user.count();
-      tablesReady = true;
-    } catch (tableErr) {
-      console.error("[health] User table check failed:", tableErr);
     }
 
     const ok = tablesReady;
@@ -51,7 +56,7 @@ export async function GET() {
         dbConfig,
         hint: tablesReady
           ? undefined
-          : "Database is reachable but tables are missing. Redeploy to apply schema (migrate deploy / db push).",
+          : "Tables missing. Open /api/db/setup to create them, then try sign-up again.",
       },
       { status: ok ? 200 : 503 }
     );
@@ -64,7 +69,7 @@ export async function GET() {
         dbConfig,
         message: err instanceof Error ? err.message : "Database unreachable",
         hint:
-          "Postgres is linked but unreachable. Try redeploying after linking Storage, or set DATABASE_URL to POSTGRES_PRISMA_URL.",
+          "Postgres env vars may be missing. Link Vercel Postgres — POSTGRES_PRISMA_URL is what the app uses (POSTGRES_URL:false is normal).",
       },
       { status: 503 }
     );

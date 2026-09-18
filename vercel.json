@@ -2,5 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "npm run vercel-build",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "functions": {
+    "src/app/api/db/setup/route.ts": { "maxDuration": 60 },
+    "src/app/api/health/route.ts": { "maxDuration": 60 },
+    "src/app/api/auth/register/route.ts": { "maxDuration": 60 },
+    "src/app/api/auth/[...nextauth]/route.ts": { "maxDuration": 60 }
+  }
 }

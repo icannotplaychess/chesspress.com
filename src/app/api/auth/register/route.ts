@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { ensureSchema } from "@/lib/ensure-schema";
 import { hasDatabaseConfig } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import { hashPassword, validatePassword } from "@/lib/auth/password";
@@ -16,6 +17,17 @@ export async function POST(request: Request) {
       {
         error:
           "Server database is not configured. Link Vercel Postgres or set DATABASE_URL.",
+      },
+      { status: 503 }
+    );
+  }
+
+  const bootstrap = await ensureSchema();
+  if (!bootstrap.ok) {
+    return NextResponse.json(
+      {
+        error:
+          "Could not initialize database tables. Visit /api/db/setup or redeploy.",
       },
       { status: 503 }
     );
