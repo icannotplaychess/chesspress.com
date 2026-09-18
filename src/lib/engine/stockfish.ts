@@ -50,11 +50,9 @@ export class StockfishEngine {
     return new Promise((resolve, reject) => {
       const origin =
         typeof window !== "undefined" ? window.location.origin : "";
-      const wasmUrl = `${origin}/stockfish/stockfish.wasm`;
       const jsUrl = `${origin}/stockfish/stockfish.js`;
-      const wasmPath = encodeURIComponent(wasmUrl);
-
-      this.worker = new Worker(`${jsUrl}#${wasmPath},worker`);
+      // stockfish.js 18 loads stockfish.wasm from the same directory — do NOT append ",worker"
+      this.worker = new Worker(jsUrl);
 
       const onReady = (event: MessageEvent<string>) => {
         const text = typeof event.data === "string" ? event.data : "";

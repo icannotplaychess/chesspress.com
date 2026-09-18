@@ -39,11 +39,25 @@ function openingCommentary(explorer: LichessExplorerData): string {
   if (!explorer.opening?.name) {
     return "We're still in the early moves. Focus on development, king safety, and central control.";
   }
-  if (explorer.isOpening) {
-    const eco = explorer.opening.eco ? ` (${explorer.opening.eco})` : "";
-    return `You're in the ${explorer.opening.name}${eco}. Stick to the main ideas of this line — development, central influence, and king safety.`;
+  const eco = explorer.opening.eco ? ` (${explorer.opening.eco})` : "";
+  return `You're in the ${explorer.opening.name}${eco}. Stick to the main ideas of this line — development, central influence, and king safety.`;
+}
+
+function engineCommentary(
+  analysis: PositionAnalysis,
+  phase: CoachContext["phase"]
+): string {
+  const line = analysis.lines[0];
+  const evalStr = formatEvaluation(line.scoreCp, line.scoreMate);
+  const best = line.pv[0] ?? "—";
+
+  if (phase === "endgame") {
+    return `Endgame evaluation: ${evalStr}. King activity and pawn structure matter most. Engine suggests ${best}.`;
   }
-  return "We've left established opening theory. From here, understanding the position matters more than memorizing moves.";
+  if (phase === "middlegame") {
+    return `Middlegame: ${evalStr}. Look for tactics, improve your worst piece, and control key squares. Best move: ${best}.`;
+  }
+  return `Stockfish evaluates this at ${evalStr}. The engine's top choice is ${best}.`;
 }
 
 function classificationExplanation(
@@ -78,25 +92,26 @@ function classificationExplanation(
 
 export function generateCoachMessage(ctx: CoachContext): string {
   const parts: string[] = [];
+  const inBook = ctx.explorer?.isOpening ?? false;
+  const phase = ctx.phase ?? "middlegame";
 
-  if (ctx.explorer && ctx.phase === "opening") {
+  if (ctx.explorer && inBook) {
     parts.push(openingCommentary(ctx.explorer));
+  } else if (ctx.explorer?.opening?.name && !inBook) {
+    parts.push(
+      `We've left the ${ctx.explorer.opening.name} book line. Let's focus on the concrete position.`
+    );
   }
 
   if (ctx.analysis?.lines[0]) {
-    const line = ctx.analysis.lines[0];
-    const evalStr = formatEvaluation(line.scoreCp, line.scoreMate);
-    const best = line.pv[0] ?? "—";
-    parts.push(
-      `Stockfish evaluates this at ${evalStr}. The engine's top choice is ${best}.`
-    );
+    parts.push(engineCommentary(ctx.analysis, phase));
   }
 
   if (ctx.classification) {
     parts.push(classificationExplanation(ctx.classification, ctx.personality));
   }
 
-  if (ctx.explorer && ctx.explorer.moves.length > 0 && ctx.phase === "opening") {
+  if (ctx.explorer && inBook && ctx.explorer.moves.length > 0) {
     const top = ctx.explorer.moves[0];
     parts.push(
       `In the database, ${top.san} is the most popular reply (${top.white}% white wins, ${top.draws}% draws, ${top.black}% black wins).`

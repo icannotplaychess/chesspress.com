@@ -1,16 +1,21 @@
 "use client";
 
-import { formatEvaluation } from "@/lib/engine/evaluation";
+import { formatEvaluation, toWhitePerspective } from "@/lib/engine/evaluation";
 import type { PositionAnalysis } from "@/lib/types";
 
 interface EnginePanelProps {
   analysis: PositionAnalysis | null;
+  fen: string;
   isAnalyzing: boolean;
   error?: string | null;
 }
 
-export function EnginePanel({ analysis, isAnalyzing, error }: EnginePanelProps) {
+export function EnginePanel({ analysis, fen, isAnalyzing, error }: EnginePanelProps) {
   const top = analysis?.lines[0];
+  const sideToMove = fen.split(" ")[1] as "w" | "b";
+  const whiteEval = top
+    ? toWhitePerspective(top.scoreCp, top.scoreMate, sideToMove)
+    : { cp: 0, mate: null as number | null };
 
   return (
     <div className="rounded-lg border border-[var(--panel-border)] bg-[var(--panel)] p-4">
@@ -29,7 +34,7 @@ export function EnginePanel({ analysis, isAnalyzing, error }: EnginePanelProps) 
         <div className="space-y-3">
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold chess-notation">
-              {formatEvaluation(top.scoreCp, top.scoreMate)}
+              {formatEvaluation(whiteEval.cp, whiteEval.mate, "white")}
             </span>
             {top.pv[0] && (
               <span className="text-sm text-[var(--muted)]">
@@ -44,7 +49,13 @@ export function EnginePanel({ analysis, isAnalyzing, error }: EnginePanelProps) 
           </div>
 
           <div className="space-y-2">
-            {analysis?.lines.map((line) => (
+            {analysis?.lines.map((line) => {
+              const lineEval = toWhitePerspective(
+                line.scoreCp,
+                line.scoreMate,
+                sideToMove
+              );
+              return (
               <div
                 key={line.multipv}
                 className="rounded-md bg-[#0a0a0a] px-3 py-2 text-xs"
@@ -54,14 +65,15 @@ export function EnginePanel({ analysis, isAnalyzing, error }: EnginePanelProps) 
                     #{line.multipv}
                   </span>
                   <span className="chess-notation font-semibold">
-                    {formatEvaluation(line.scoreCp, line.scoreMate)}
+                    {formatEvaluation(lineEval.cp, lineEval.mate, "white")}
                   </span>
                 </div>
                 <div className="chess-notation text-[var(--muted)] truncate">
                   {line.pv.slice(0, 8).join(" ")}
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
       ) : (

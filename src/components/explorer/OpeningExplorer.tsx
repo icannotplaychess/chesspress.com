@@ -197,6 +197,7 @@ export function OpeningExplorer() {
           </div>
           <EnginePanel
             analysis={analysis}
+            fen={game.currentFen}
             isAnalyzing={isAnalyzing}
             error={engineError}
           />
