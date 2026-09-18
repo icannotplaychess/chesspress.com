@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  outputFileTracingIncludes: {
+    "/api/db/setup": ["./prisma/migrations/**/*"],
+    "/api/health": ["./prisma/migrations/**/*"],
+    "/api/auth/register": ["./prisma/migrations/**/*"],
+    "/api/auth/[...nextauth]": ["./prisma/migrations/**/*"],
+  },
   async headers() {
     return [
       {
