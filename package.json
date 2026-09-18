@@ -9,7 +9,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:migrate": "prisma migrate dev",
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "vercel-build": "node scripts/vercel-build.mjs",
     "start": "next start",
     "lint": "eslint"
