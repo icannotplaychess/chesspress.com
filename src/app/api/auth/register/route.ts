@@ -58,10 +58,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
   } catch (err) {
     console.error("[register]", err);
-    const message =
-      err instanceof Error && err.message.includes("connect")
-        ? "Database connection failed. Check DATABASE_URL on Vercel."
-        : "Could not create account. Please try again.";
+    const detail = err instanceof Error ? err.message : "";
+    if (detail.includes("does not exist")) {
+      return NextResponse.json(
+        {
+          error:
+            "Database tables are not set up yet. Redeploy the site to create them.",
+        },
+        { status: 503 }
+      );
+    }
+    const message = detail.includes("connect")
+      ? "Database connection failed. Check DATABASE_URL on Vercel."
+      : "Could not create account. Please try again.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
