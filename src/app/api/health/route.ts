@@ -7,7 +7,8 @@ export async function GET() {
   const dbConfig = {
     DATABASE_URL: Boolean(process.env.DATABASE_URL),
     POSTGRES_PRISMA_URL: Boolean(process.env.POSTGRES_PRISMA_URL),
-    POSTGRES_URL: Boolean(process.env.POSTGRES_URL),
+    POSTGRES_URL_NON_POOLING: Boolean(process.env.POSTGRES_URL_NON_POOLING),
+    AUTH_URL: Boolean(process.env.AUTH_URL ?? process.env.NEXTAUTH_URL),
   };
 
   if (!hasDatabaseConfig()) {
@@ -26,15 +27,34 @@ export async function GET() {
 
   try {
     await prisma.$queryRaw`SELECT 1`;
-    return NextResponse.json({
-      ok: true,
-      database: "connected",
-      googleAuth: Boolean(
-        process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-      ),
-      hasAuthSecret: Boolean(process.env.AUTH_SECRET),
-      dbConfig,
-    });
+
+    let tablesReady = false;
+    let userCount: number | null = null;
+    try {
+      userCount = await prisma.user.count();
+      tablesReady = true;
+    } catch (tableErr) {
+      console.error("[health] User table check failed:", tableErr);
+    }
+
+    const ok = tablesReady;
+    return NextResponse.json(
+      {
+        ok,
+        database: tablesReady ? "ready" : "connected_no_tables",
+        tablesReady,
+        userCount,
+        googleAuth: Boolean(
+          process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+        ),
+        hasAuthSecret: Boolean(process.env.AUTH_SECRET),
+        dbConfig,
+        hint: tablesReady
+          ? undefined
+          : "Database is reachable but tables are missing. Redeploy to apply schema (migrate deploy / db push).",
+      },
+      { status: ok ? 200 : 503 }
+    );
   } catch (err) {
     console.error("[health]", err);
     return NextResponse.json(

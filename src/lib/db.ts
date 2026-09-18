@@ -3,7 +3,8 @@ import { resolveDatabaseUrl } from "@/lib/env";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-function getPrismaClient(): PrismaClient {
+/** Real Prisma client instance (required by @auth/prisma-adapter). */
+export function getPrismaClient(): PrismaClient {
   if (!globalForPrisma.prisma) {
     const url = resolveDatabaseUrl();
     if (!url) {
