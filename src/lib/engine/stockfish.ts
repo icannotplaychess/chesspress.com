@@ -2,6 +2,8 @@ import type { EngineLine, PositionAnalysis } from "@/lib/types";
 
 type AnalysisCallback = (analysis: PositionAnalysis) => void;
 
+const INIT_TIMEOUT_MS = 30_000;
+
 function parseInfoLine(line: string): Partial<EngineLine> & { depth?: number; nodes?: number } | null {
   if (!line.startsWith("info ")) return null;
 
@@ -34,6 +36,22 @@ function parseInfoLine(line: string): Partial<EngineLine> & { depth?: number; no
   };
 }
 
+function snapshotAnalysis(
+  fen: string,
+  lineBuffer: Map<number, EngineLine>,
+  latestDepth: number,
+  latestNodes: number
+): PositionAnalysis {
+  const linesArr = Array.from(lineBuffer.values()).sort((a, b) => a.multipv - b.multipv);
+  return {
+    fen,
+    depth: latestDepth,
+    nodes: latestNodes,
+    lines: linesArr,
+    bestMove: linesArr[0]?.pv[0] ?? null,
+  };
+}
+
 export class StockfishEngine {
   private worker: Worker | null = null;
   private ready = false;
@@ -43,15 +61,26 @@ export class StockfishEngine {
   private latestDepth = 0;
   private latestNodes = 0;
   private currentFen = "";
+  private pendingFinish: ((analysis: PositionAnalysis) => void) | null = null;
+  private pendingHandler: ((event: MessageEvent<string>) => void) | null = null;
 
   async init(): Promise<void> {
-    if (this.worker) return;
+    if (this.worker && this.ready) return;
+    if (this.worker && !this.ready) {
+      await this.waitForReady();
+      return;
+    }
 
     return new Promise((resolve, reject) => {
       const origin =
         typeof window !== "undefined" ? window.location.origin : "";
       const jsUrl = `${origin}/stockfish/stockfish.js`;
-      // stockfish.js 18 loads stockfish.wasm from the same directory — do NOT append ",worker"
+
+      const timeout = setTimeout(() => {
+        reject(new Error("Stockfish took too long to start — check your connection and refresh"));
+      }, INIT_TIMEOUT_MS);
+
+      // Plain worker URL — stockfish.js auto-resolves stockfish.wasm from the same path.
       this.worker = new Worker(jsUrl);
 
       const onReady = (event: MessageEvent<string>) => {
@@ -61,6 +90,7 @@ export class StockfishEngine {
           this.send("isready");
         }
         if (text.includes("readyok")) {
+          clearTimeout(timeout);
           this.ready = true;
           this.worker?.removeEventListener("message", onReady);
           resolve();
@@ -70,13 +100,55 @@ export class StockfishEngine {
       this.worker.addEventListener("message", onReady);
       this.worker.addEventListener("message", (e) => this.handleMessage(e));
 
-      this.worker.onerror = (err) => reject(err);
+      this.worker.onerror = (err) => {
+        clearTimeout(timeout);
+        reject(err);
+      };
+
       this.send("uci");
+    });
+  }
+
+  private waitForReady(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const start = Date.now();
+      const tick = () => {
+        if (this.ready) {
+          resolve();
+          return;
+        }
+        if (Date.now() - start > INIT_TIMEOUT_MS) {
+          reject(new Error("Stockfish initialization timed out"));
+          return;
+        }
+        setTimeout(tick, 50);
+      };
+      tick();
     });
   }
 
   private send(cmd: string): void {
     this.worker?.postMessage(cmd);
+  }
+
+  private finishPendingAnalysis(): void {
+    if (!this.pendingFinish) return;
+
+    const analysis = snapshotAnalysis(
+      this.currentFen,
+      this.lineBuffer,
+      this.latestDepth,
+      this.latestNodes
+    );
+
+    if (this.pendingHandler) {
+      this.worker?.removeEventListener("message", this.pendingHandler);
+      this.pendingHandler = null;
+    }
+
+    const finish = this.pendingFinish;
+    this.pendingFinish = null;
+    finish(analysis);
   }
 
   private handleMessage(event: MessageEvent<string>): void {
@@ -105,22 +177,21 @@ export class StockfishEngine {
         });
 
         if (this.currentCallback) {
-          const linesArr = Array.from(this.lineBuffer.values()).sort(
-            (a, b) => a.multipv - b.multipv
+          this.currentCallback(
+            snapshotAnalysis(
+              this.currentFen,
+              this.lineBuffer,
+              this.latestDepth,
+              this.latestNodes
+            )
           );
-          this.currentCallback({
-            fen: this.currentFen,
-            depth: this.latestDepth,
-            nodes: this.latestNodes,
-            lines: linesArr,
-            bestMove: linesArr[0]?.pv[0] ?? null,
-          });
         }
       }
     }
   }
 
   stop(): void {
+    this.finishPendingAnalysis();
     this.send("stop");
     this.currentCallback = null;
     this.lineBuffer.clear();
@@ -131,6 +202,8 @@ export class StockfishEngine {
     options: { depth?: number; movetime?: number } = {},
     onUpdate?: AnalysisCallback
   ): Promise<PositionAnalysis> {
+    this.finishPendingAnalysis();
+
     const id = ++this.analysisId;
     this.currentFen = fen;
     this.lineBuffer.clear();
@@ -144,29 +217,45 @@ export class StockfishEngine {
       const finish = (analysis: PositionAnalysis) => {
         if (resolved) return;
         resolved = true;
+        if (this.pendingFinish === finish) {
+          this.pendingFinish = null;
+        }
+        if (this.pendingHandler) {
+          this.worker?.removeEventListener("message", this.pendingHandler);
+          this.pendingHandler = null;
+        }
         this.currentCallback = null;
         resolve(analysis);
       };
 
       const handler = (event: MessageEvent<string>) => {
-        if (id !== this.analysisId) return;
+        if (id !== this.analysisId) {
+          finish(
+            snapshotAnalysis(
+              this.currentFen,
+              this.lineBuffer,
+              this.latestDepth,
+              this.latestNodes
+            )
+          );
+          return;
+        }
 
         const raw = typeof event.data === "string" ? event.data : "";
         if (raw.includes("bestmove")) {
-          const linesArr = Array.from(this.lineBuffer.values()).sort(
-            (a, b) => a.multipv - b.multipv
+          finish(
+            snapshotAnalysis(
+              fen,
+              this.lineBuffer,
+              this.latestDepth,
+              this.latestNodes
+            )
           );
-          finish({
-            fen,
-            depth: this.latestDepth,
-            nodes: this.latestNodes,
-            lines: linesArr,
-            bestMove: linesArr[0]?.pv[0] ?? null,
-          });
-          this.worker?.removeEventListener("message", handler);
         }
       };
 
+      this.pendingFinish = finish;
+      this.pendingHandler = handler;
       this.worker?.addEventListener("message", handler);
       this.send("stop");
       this.send(`position fen ${fen}`);
@@ -189,6 +278,7 @@ export class StockfishEngine {
   }
 
   destroy(): void {
+    this.finishPendingAnalysis();
     this.send("quit");
     this.worker?.terminate();
     this.worker = null;
@@ -201,11 +291,21 @@ export class StockfishEngine {
 }
 
 let sharedEngine: StockfishEngine | null = null;
+let sharedInit: Promise<StockfishEngine> | null = null;
 
 export async function getStockfishEngine(): Promise<StockfishEngine> {
-  if (!sharedEngine) {
-    sharedEngine = new StockfishEngine();
-    await sharedEngine.init();
+  if (sharedEngine?.isReady()) return sharedEngine;
+
+  if (!sharedInit) {
+    sharedInit = (async () => {
+      const engine = sharedEngine ?? new StockfishEngine();
+      sharedEngine = engine;
+      await engine.init();
+      return engine;
+    })().finally(() => {
+      sharedInit = null;
+    });
   }
-  return sharedEngine;
+
+  return sharedInit;
 }

@@ -24,7 +24,13 @@ export function AnalysisBoard() {
   const searchParams = useSearchParams();
   const loadedFromUrl = useRef(false);
   const game = useChessGame();
-  const { analysis, isAnalyzing, error: engineError } = useStockfish(game.currentFen);
+  const {
+    analysis,
+    isAnalyzing,
+    hasEval,
+    engineReady,
+    error: engineError,
+  } = useStockfish(game.currentFen);
   const { data: explorer, loading: explorerLoading, unavailable: explorerUnavailable, missingToken: explorerMissingToken } = useLichessExplorer(
     game.currentFen,
     game.history.slice(0, game.moveIndex + 1).map((m) => m.uci)
@@ -236,7 +242,8 @@ export function AnalysisBoard() {
               cp={evalDisplay.cp}
               mate={evalDisplay.mate}
               orientation={game.orientation}
-              isAnalyzing={isAnalyzing}
+              isAnalyzing={isAnalyzing || !engineReady}
+              hasEval={hasEval}
             />
             <div className="w-full aspect-square min-w-0">
               <Chessboard
@@ -275,7 +282,7 @@ export function AnalysisBoard() {
           <EnginePanel
             analysis={analysis}
             fen={game.currentFen}
-            isAnalyzing={isAnalyzing}
+            isAnalyzing={isAnalyzing || !engineReady}
             error={engineError}
           />
         </div>

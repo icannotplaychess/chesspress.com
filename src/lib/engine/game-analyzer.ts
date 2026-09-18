@@ -6,8 +6,8 @@ import type { MoveAnalysis, PositionAnalysis } from "@/lib/types";
 
 const analysisCache = new Map<string, PositionAnalysis>();
 
-function cacheKey(fen: string, depth: number): string {
-  return `${fen}|${depth}`;
+function cacheKey(fen: string, mode: string): string {
+  return `${fen}|${mode}`;
 }
 
 export async function analyzePositionCached(
@@ -15,7 +15,7 @@ export async function analyzePositionCached(
   depth = 16,
   onUpdate?: (analysis: PositionAnalysis) => void
 ): Promise<PositionAnalysis> {
-  const key = cacheKey(fen, depth);
+  const key = cacheKey(fen, `depth:${depth}`);
   const cached = analysisCache.get(key);
   if (cached) {
     onUpdate?.(cached);
@@ -25,6 +25,23 @@ export async function analyzePositionCached(
   const engine = await getStockfishEngine();
   const result = await engine.analyzePosition(fen, { depth }, onUpdate);
   analysisCache.set(key, result);
+  return result;
+}
+
+/** Fast live eval for the analysis board — streams partial results within movetime. */
+export async function analyzePositionLive(
+  fen: string,
+  movetime = 400,
+  onUpdate?: (analysis: PositionAnalysis) => void
+): Promise<PositionAnalysis> {
+  const engine = await getStockfishEngine();
+  const result = await engine.analyzePosition(fen, { movetime }, onUpdate);
+
+  const deepKey = cacheKey(fen, "depth:18");
+  if (!analysisCache.has(deepKey) && result.lines.length > 0) {
+    analysisCache.set(deepKey, result);
+  }
+
   return result;
 }
 

@@ -7,6 +7,7 @@ interface EvaluationBarProps {
   mate: number | null;
   orientation?: "white" | "black";
   isAnalyzing?: boolean;
+  hasEval?: boolean;
 }
 
 export function EvaluationBar({
@@ -14,6 +15,7 @@ export function EvaluationBar({
   mate,
   orientation = "white",
   isAnalyzing = false,
+  hasEval = true,
 }: EvaluationBarProps) {
   let whiteCp = cp ?? 0;
   let whiteMate = mate;
@@ -23,10 +25,13 @@ export function EvaluationBar({
     whiteMate = whiteMate !== null ? -whiteMate : null;
   }
 
+  const pending = isAnalyzing && !hasEval;
   const value = cpToBarValue(whiteCp, whiteMate);
   // Fill from bottom: 50% = equal, higher = white better, lower = black better
-  const fillPercent = Math.max(3, Math.min(97, ((value + 1) / 2) * 100));
-  const evalLabel = formatEvaluation(whiteCp, whiteMate, "white");
+  const fillPercent = pending
+    ? 50
+    : Math.max(3, Math.min(97, ((value + 1) / 2) * 100));
+  const evalLabel = pending ? "…" : formatEvaluation(whiteCp, whiteMate, "white");
 
   // Place label in the half that has contrast
   const labelOnWhiteHalf = fillPercent > 50;
@@ -38,7 +43,9 @@ export function EvaluationBar({
     >
       {/* White advantage — grows from bottom (Chess.com style) */}
       <div
-        className="absolute bottom-0 left-0 right-0 bg-[#e8e8e8] transition-[height] duration-300 ease-out"
+        className={`absolute bottom-0 left-0 right-0 bg-[#e8e8e8] transition-[height] duration-300 ease-out ${
+          pending ? "animate-pulse" : ""
+        }`}
         style={{ height: `${fillPercent}%` }}
       />
 
