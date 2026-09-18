@@ -43,7 +43,9 @@ export default function SignUpPage() {
     });
     setLoading(false);
     if (result?.error) {
-      setError("Account created but sign-in failed. Please sign in manually.");
+      setError(
+        `Account created but sign-in failed (${result.error}). Please sign in manually.`
+      );
       return;
     }
     router.push("/dashboard");
