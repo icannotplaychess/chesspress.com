@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useState } from "react";
 import { CoachPanel } from "@/components/analysis/CoachPanel";
+import { storeAnalysisPgn } from "@/lib/analysis/pgn-transfer";
 import type { ScoutPlatform, ScoutReport } from "@/lib/scout/types";
 
 type Tab = "scout" | "self";
 
 export function PlayerScout() {
+  const router = useRouter();
   const { data: session } = useSession();
   const [tab, setTab] = useState<Tab>("scout");
   const [platform, setPlatform] = useState<ScoutPlatform>("lichess");
@@ -332,12 +335,16 @@ export function PlayerScout() {
                     >
                       {g.playerResult}
                     </span>
-                    <Link
-                      href={`/analysis?pgn=${encodeURIComponent(g.pgn.slice(0, 500))}`}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        storeAnalysisPgn(g.pgn);
+                        router.push("/analysis?from=scout");
+                      }}
                       className="text-xs text-[var(--accent-text)] hover:underline"
                     >
                       Analyze
-                    </Link>
+                    </button>
                   </div>
                 </div>
               ))}

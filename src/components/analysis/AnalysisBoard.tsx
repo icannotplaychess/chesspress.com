@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { consumeAnalysisPgn } from "@/lib/analysis/pgn-transfer";
 import { Chessboard } from "react-chessboard";
 import { Chess, type Square } from "chess.js";
 import { EvaluationBar } from "@/components/analysis/EvaluationBar";
@@ -19,6 +21,8 @@ import { generateCoachMessage, generatePhase } from "@/lib/coach/shreya";
 import type { Arrow } from "react-chessboard";
 
 export function AnalysisBoard() {
+  const searchParams = useSearchParams();
+  const loadedFromUrl = useRef(false);
   const game = useChessGame();
   const { analysis, isAnalyzing, error: engineError } = useStockfish(game.currentFen);
   const { data: explorer, loading: explorerLoading, unavailable: explorerUnavailable, missingToken: explorerMissingToken } = useLichessExplorer(
@@ -62,7 +66,7 @@ export function AnalysisBoard() {
         analysis,
         explorer,
         moveNumber: game.moveNumber,
-        phase: explorer?.isOpening ? "opening" : phase,
+        phase,
       }),
     [
       game.currentFen,
@@ -155,6 +159,23 @@ export function AnalysisBoard() {
   const handleCopyFen = useCallback(() => {
     navigator.clipboard.writeText(game.currentFen);
   }, [game]);
+
+  useEffect(() => {
+    if (loadedFromUrl.current) return;
+    loadedFromUrl.current = true;
+
+    const from = searchParams.get("from");
+    if (from === "scout") {
+      const pgn = consumeAnalysisPgn();
+      if (pgn) game.loadPgn(pgn);
+      return;
+    }
+
+    const pgnParam = searchParams.get("pgn");
+    if (pgnParam) {
+      game.loadPgn(decodeURIComponent(pgnParam));
+    }
+  }, [searchParams, game]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -251,7 +272,12 @@ export function AnalysisBoard() {
               onSelect={game.goToMove}
             />
           </div>
-          <EnginePanel analysis={analysis} isAnalyzing={isAnalyzing} error={engineError} />
+          <EnginePanel
+            analysis={analysis}
+            fen={game.currentFen}
+            isAnalyzing={isAnalyzing}
+            error={engineError}
+          />
         </div>
       </div>
     </div>
