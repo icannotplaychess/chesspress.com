@@ -16,8 +16,16 @@ import {
   recordLineComplete,
   recordMistake,
 } from "@/lib/repertoire/spaced-repetition";
-import * as storage from "@/lib/repertoire/storage";
-import type { PracticeLine, PracticeMode } from "@/lib/repertoire/types";
+import type { LineMemory, PracticeLine, PracticeMode, RepertoireLine } from "@/lib/repertoire/types";
+
+function findStoredLine(
+  repertoires: { id: string; lines: RepertoireLine[] }[],
+  repertoireId: string,
+  lineId: string
+): RepertoireLine | undefined {
+  const rep = repertoires.find((r) => r.id === repertoireId);
+  return rep?.lines.find((l) => l.id === lineId);
+}
 
 const MODES: { id: PracticeMode; label: string; description: string }[] = [
   {
@@ -48,7 +56,7 @@ export function PracticeTrainer({
   tournamentRepId,
   initialLineId,
 }: PracticeTrainerProps) {
-  const { repertoires, loaded, stats } = useRepertoires();
+  const { repertoires, loaded, stats, updateLineMemory } = useRepertoires();
   const [mode, setMode] = useState<PracticeMode>(initialMode);
   const [sessionActive, setSessionActive] = useState(false);
   const [lineQueue, setLineQueue] = useState<PracticeLine[]>([]);
@@ -92,10 +100,10 @@ export function PracticeTrainer({
   }, []);
 
   const persistMemory = useCallback(
-    (line: PracticeLine, memory: ReturnType<typeof recordMistake>) => {
-      storage.updateLineMemory(line.repertoireId, line.lineId, memory);
+    (line: PracticeLine, memory: LineMemory) => {
+      void updateLineMemory(line.repertoireId, line.lineId, memory);
     },
-    []
+    [updateLineMemory]
   );
 
   const autoPlayToUserTurn = useCallback(
@@ -106,8 +114,11 @@ export function PracticeTrainer({
 
       const step = () => {
         if (idx >= line.moves.length) {
-          const rep = storage.getRepertoire(line.repertoireId);
-          const storedLine = rep?.lines.find((l) => l.id === line.lineId);
+          const storedLine = findStoredLine(
+            repertoires,
+            line.repertoireId,
+            line.lineId
+          );
           if (storedLine) {
             const updated = recordLineComplete(storedLine.memory);
             persistMemory(line, updated);
@@ -148,7 +159,14 @@ export function PracticeTrainer({
 
       step();
     },
-    [clearAutoPlay, lineIndex, lineQueue, persistMemory, sessionStats.linesCompleted]
+    [
+      clearAutoPlay,
+      lineIndex,
+      lineQueue,
+      persistMemory,
+      repertoires,
+      sessionStats.linesCompleted,
+    ]
   );
 
   const beginLine = useCallback(
@@ -199,8 +217,11 @@ export function PracticeTrainer({
       setFeedback({ type: "incorrect", message });
       setWaitingForUser(false);
 
-      const rep = storage.getRepertoire(line.repertoireId);
-      const storedLine = rep?.lines.find((l) => l.id === line.lineId);
+      const storedLine = findStoredLine(
+        repertoires,
+        line.repertoireId,
+        line.lineId
+      );
       if (storedLine) {
         persistMemory(line, recordMistake(storedLine.memory));
       }
@@ -209,7 +230,7 @@ export function PracticeTrainer({
         beginLine(line);
       }, 1500);
     },
-    [beginLine, persistMemory]
+    [beginLine, persistMemory, repertoires]
   );
 
   const handleMove = useCallback(
@@ -244,8 +265,11 @@ export function PracticeTrainer({
 
       const nextIndex = moveIndex + 1;
       if (nextIndex >= currentLine.moves.length) {
-        const rep = storage.getRepertoire(currentLine.repertoireId);
-        const storedLine = rep?.lines.find((l) => l.id === currentLine.lineId);
+        const storedLine = findStoredLine(
+          repertoires,
+          currentLine.repertoireId,
+          currentLine.lineId
+        );
         if (storedLine) {
           persistMemory(currentLine, recordLineComplete(storedLine.memory));
         }
@@ -279,6 +303,7 @@ export function PracticeTrainer({
       restartLine,
       autoPlayToUserTurn,
       persistMemory,
+      repertoires,
       lineIndex,
       lineQueue,
       sessionStats.linesCompleted,
