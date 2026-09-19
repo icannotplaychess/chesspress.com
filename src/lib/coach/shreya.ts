@@ -1,3 +1,4 @@
+import { Chess, type Square } from "chess.js";
 import type {
   CoachPersonality,
   LichessExplorerData,
@@ -5,7 +6,14 @@ import type {
   PositionAnalysis,
 } from "@/lib/types";
 import { CLASSIFICATION_LABELS } from "@/lib/engine/move-classification";
-import { formatEvaluation } from "@/lib/engine/evaluation";
+import { formatEvaluation, toWhitePerspective } from "@/lib/engine/evaluation";
+import {
+  analyzePosition,
+  commentOnLastMove,
+  describeBestMove,
+  interpretEvaluation,
+  uciToSan,
+} from "@/lib/coach/position-insights";
 
 interface CoachContext {
   personality: CoachPersonality;
@@ -43,21 +51,82 @@ function openingCommentary(explorer: LichessExplorerData): string {
   return `You're in the ${explorer.opening.name}${eco}. Stick to the main ideas of this line — development, central influence, and king safety.`;
 }
 
-function engineCommentary(
-  analysis: PositionAnalysis,
-  phase: CoachContext["phase"]
-): string {
-  const line = analysis.lines[0];
-  const evalStr = formatEvaluation(line.scoreCp, line.scoreMate);
-  const best = line.pv[0] ?? "—";
+function positionCommentary(fen: string, phase: CoachContext["phase"]): string[] {
+  const insights = analyzePosition(fen);
+  const parts: string[] = [];
+
+  parts.push(insights.materialText);
+  parts.push(insights.centerOccupancy);
+
+  if (insights.inCheck) {
+    parts.push("The king is in check — safety comes first.");
+  }
 
   if (phase === "endgame") {
-    return `Endgame evaluation: ${evalStr}. King activity and pawn structure matter most. Engine suggests ${best}.`;
+    parts.push(insights.pawnStructure);
+    if (insights.canCastle.white || insights.canCastle.black) {
+      parts.push("Castling rights still matter — keep the king active but safe.");
+    }
+  } else if (phase === "opening") {
+    parts.push("Develop pieces toward the center and finish development before launching an attack.");
+  } else {
+    parts.push(insights.pieceActivity);
   }
-  if (phase === "middlegame") {
-    return `Middlegame: ${evalStr}. Look for tactics, improve your worst piece, and control key squares. Best move: ${best}.`;
+
+  return parts;
+}
+
+function engineCommentary(
+  fen: string,
+  analysis: PositionAnalysis,
+  phase: CoachContext["phase"]
+): string[] {
+  const line = analysis.lines[0];
+  const sideToMove = fen.split(" ")[1] as "w" | "b";
+  const whiteEval = toWhitePerspective(line.scoreCp, line.scoreMate, sideToMove);
+  const evalStr = formatEvaluation(whiteEval.cp, whiteEval.mate, "white");
+  const interpretation = interpretEvaluation(whiteEval.cp, whiteEval.mate);
+  const bestUci = line.pv[0];
+  const bestSan = bestUci ? uciToSan(fen, bestUci) : "—";
+  const moveIdea = bestUci ? describeBestMove(fen, bestUci) : null;
+
+  const parts: string[] = [
+    `${interpretation} Stockfish scores it ${evalStr} from White's perspective.`,
+  ];
+
+  if (moveIdea) {
+    parts.push(moveIdea);
+  } else {
+    parts.push(`The engine's top choice is ${bestSan}.`);
   }
-  return `Stockfish evaluates this at ${evalStr}. The engine's top choice is ${best}.`;
+
+  if (line.pv.length > 1) {
+    try {
+      const chess = new Chess(fen);
+      const sans: string[] = [];
+      for (const uci of line.pv.slice(0, 4)) {
+        const move = chess.move({
+          from: uci.slice(0, 2) as Square,
+          to: uci.slice(2, 4) as Square,
+          promotion: uci.length > 4 ? (uci[4] as "q" | "r" | "b" | "n") : undefined,
+        });
+        if (move) sans.push(move.san);
+      }
+      if (sans.length > 1) {
+        parts.push(`The main line continues ${sans.slice(1).join(", ")}.`);
+      }
+    } catch {
+      // ignore invalid PV lines
+    }
+  }
+
+  if (phase === "endgame") {
+    parts.push("In the endgame, king activity and pawn races often matter more than raw material.");
+  } else if (phase === "middlegame") {
+    parts.push("Look for tactics, improve your worst piece, and keep an eye on your opponent's threats.");
+  }
+
+  return parts;
 }
 
 function classificationExplanation(
@@ -103,8 +172,17 @@ export function generateCoachMessage(ctx: CoachContext): string {
     );
   }
 
+  if (ctx.lastMove) {
+    const lastMoveNote = commentOnLastMove(ctx.fen, ctx.lastMove);
+    if (lastMoveNote) parts.push(lastMoveNote);
+  }
+
+  parts.push(...positionCommentary(ctx.fen, phase));
+
   if (ctx.analysis?.lines[0]) {
-    parts.push(engineCommentary(ctx.analysis, phase));
+    parts.push(...engineCommentary(ctx.fen, ctx.analysis, phase));
+  } else {
+    parts.push("Stockfish is still calculating — hang on for the exact evaluation.");
   }
 
   if (ctx.classification) {
@@ -114,12 +192,8 @@ export function generateCoachMessage(ctx: CoachContext): string {
   if (ctx.explorer && inBook && ctx.explorer.moves.length > 0) {
     const top = ctx.explorer.moves[0];
     parts.push(
-      `In the database, ${top.san} is the most popular reply (${top.white}% white wins, ${top.draws}% draws, ${top.black}% black wins).`
+      `In master games, ${top.san} is the most popular reply (${top.white}% white wins, ${top.draws}% draws, ${top.black}% black wins).`
     );
-  }
-
-  if (parts.length === 0) {
-    return "Play a move or load a position to begin analysis. I'll explain what Stockfish and the database show.";
   }
 
   return parts.join(" ");
