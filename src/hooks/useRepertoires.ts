@@ -5,10 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 import type { Repertoire, RepertoireLine } from "@/lib/repertoire/types";
 import * as storage from "@/lib/repertoire/storage";
 import {
+  createInitialMemory,
   linesNeedingLesson,
   linesNeedingPractice,
+  recordLessonComplete,
   repertoireMastery,
 } from "@/lib/repertoire/spaced-repetition";
+import type { LineMemory } from "@/lib/repertoire/types";
 
 async function fetchServerRepertoires(): Promise<Repertoire[]> {
   const res = await fetch("/api/repertoires");
@@ -26,6 +29,55 @@ async function migrateLocalToServer(): Promise<void> {
   });
 }
 
+/** Merge practice/lesson progress from localStorage when server rows are stale. */
+function mergeLocalLineMemory(
+  serverReps: Repertoire[],
+  localReps: Repertoire[]
+): { merged: Repertoire[]; changed: boolean } {
+  let changed = false;
+  const merged = serverReps.map((rep) => {
+    const localRep = localReps.find((l) => l.id === rep.id);
+    if (!localRep) return rep;
+
+    const lines = rep.lines.map((line) => {
+      const localLine = localRep.lines.find((l) => l.id === line.id);
+      if (!localLine) return line;
+
+      const localMem = localLine.memory;
+      const serverMem = line.memory;
+      const localAhead =
+        (localMem.lessonCompleted && !serverMem.lessonCompleted) ||
+        localMem.mastery > serverMem.mastery ||
+        localMem.correctAttempts > serverMem.correctAttempts ||
+        localMem.incorrectAttempts > serverMem.incorrectAttempts;
+
+      if (!localAhead) return line;
+
+      changed = true;
+      return {
+        ...line,
+        memory: {
+          ...serverMem,
+          ...localMem,
+          lessonCompleted: localMem.lessonCompleted || serverMem.lessonCompleted,
+        },
+      };
+    });
+
+    return { ...rep, lines };
+  });
+
+  return { merged, changed };
+}
+
+async function persistRepertoireToServer(rep: Repertoire): Promise<void> {
+  await fetch("/api/repertoires", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(rep),
+  });
+}
+
 export function useRepertoires() {
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
@@ -35,7 +87,19 @@ export function useRepertoires() {
   const refresh = useCallback(async () => {
     if (isAuthenticated) {
       await migrateLocalToServer();
-      const data = await fetchServerRepertoires();
+      let data = await fetchServerRepertoires();
+      const local = storage.getRepertoires();
+      if (local.length > 0 && data.length > 0) {
+        const { merged, changed } = mergeLocalLineMemory(data, local);
+        if (changed) {
+          for (const rep of merged) {
+            await persistRepertoireToServer(rep);
+          }
+          data = await fetchServerRepertoires();
+        } else {
+          data = merged;
+        }
+      }
       setRepertoires(data);
     } else if (typeof window !== "undefined") {
       setRepertoires(storage.getRepertoires());
@@ -186,6 +250,73 @@ export function useRepertoires() {
     [isAuthenticated, repertoires, persistRepertoire, refresh]
   );
 
+  const updateLineMemory = useCallback(
+    async (repertoireId: string, lineId: string, memory: LineMemory) => {
+      const rep = repertoires.find((r) => r.id === repertoireId);
+      if (!rep) {
+        storage.updateLineMemory(repertoireId, lineId, memory);
+        await refresh();
+        return;
+      }
+
+      const lines = rep.lines.map((line) => {
+        if (line.id !== lineId) return line;
+        return {
+          ...line,
+          memory: {
+            ...createInitialMemory(),
+            ...line.memory,
+            ...memory,
+            lessonCompleted:
+              memory.lessonCompleted ?? line.memory.lessonCompleted ?? false,
+          },
+        };
+      });
+
+      const updated: Repertoire = { ...rep, lines };
+
+      if (isAuthenticated) {
+        await persistRepertoire(updated);
+      } else {
+        storage.updateLineMemory(repertoireId, lineId, memory);
+      }
+      await refresh();
+    },
+    [repertoires, isAuthenticated, persistRepertoire, refresh]
+  );
+
+  const markLessonComplete = useCallback(
+    async (repertoireId: string, lineId: string) => {
+      const rep = repertoires.find((r) => r.id === repertoireId);
+      if (!rep) {
+        storage.markLessonComplete(repertoireId, lineId);
+        await refresh();
+        return;
+      }
+
+      const lines = rep.lines.map((line) => {
+        if (line.id !== lineId) return line;
+        return {
+          ...line,
+          memory: recordLessonComplete({
+            ...createInitialMemory(),
+            ...line.memory,
+          }),
+        };
+      });
+
+      const updated: Repertoire = { ...rep, lines };
+
+      if (isAuthenticated) {
+        await persistRepertoire(updated);
+      } else {
+        storage.markLessonComplete(repertoireId, lineId);
+      }
+      await refresh();
+    },
+    [repertoires, isAuthenticated, persistRepertoire, refresh]
+  );
+
   const removeLine = useCallback(
     async (repertoireId: string, lineId: string) => {
       if (isAuthenticated) {
@@ -235,6 +366,8 @@ export function useRepertoires() {
     addLine,
     addLineFromPgn,
     removeLine,
+    updateLineMemory,
+    markLessonComplete,
     stats,
   };
 }

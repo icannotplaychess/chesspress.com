@@ -11,7 +11,6 @@ import {
 } from "@/lib/coach/opening-lesson";
 import { boardOrientation } from "@/lib/repertoire/practice-session";
 import { linesNeedingLesson } from "@/lib/repertoire/spaced-repetition";
-import * as storage from "@/lib/repertoire/storage";
 import type { PracticeLine } from "@/lib/repertoire/types";
 
 interface LearnTrainerProps {
@@ -25,7 +24,7 @@ export function LearnTrainer({
   tournamentRepId,
   initialLineId,
 }: LearnTrainerProps) {
-  const { repertoires, loaded, refresh } = useRepertoires();
+  const { repertoires, loaded, markLessonComplete } = useRepertoires();
   const [sessionActive, setSessionActive] = useState(false);
   const [lineQueue, setLineQueue] = useState<PracticeLine[]>([]);
   const [lineIndex, setLineIndex] = useState(0);
@@ -109,10 +108,9 @@ export function LearnTrainer({
 
   const finishLine = useCallback(() => {
     if (!currentLine) return;
-    storage.markLessonComplete(currentLine.repertoireId, currentLine.lineId);
-    refresh();
+    void markLessonComplete(currentLine.repertoireId, currentLine.lineId);
     setStep("complete");
-  }, [currentLine, refresh]);
+  }, [currentLine, markLessonComplete]);
 
   const goToNextLine = useCallback(() => {
     const next = lineIndex + 1;
