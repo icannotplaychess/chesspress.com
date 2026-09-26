@@ -3,13 +3,14 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireUser, unauthorized } from "@/lib/auth/session";
 import { fetchPlayerGames, fetchPlayerProfile } from "@/lib/scout/fetch-games";
-import { analyzeGames } from "@/lib/scout/analyze";
+import { buildFullScoutReport } from "@/lib/scout/build-full-report";
 import type { ScoutPlatform } from "@/lib/scout/types";
 
 const schema = z.object({
   platform: z.enum(["chesscom", "lichess"]),
   username: z.string().min(1).max(64),
-  maxGames: z.number().min(10).max(200).optional(),
+  maxGames: z.number().min(10).max(225).optional(),
+  monthsBack: z.number().min(1).max(24).optional(),
 });
 
 export async function POST(request: Request) {
@@ -24,7 +25,8 @@ export async function POST(request: Request) {
     }
 
     const { platform, username } = parsed.data;
-    const maxGames = parsed.data.maxGames ?? 100;
+    const maxGames = parsed.data.maxGames ?? 200;
+    const monthsBack = parsed.data.monthsBack ?? 6;
     const normalizedUsername = username.trim();
 
     // Check cache (24h)
@@ -76,7 +78,7 @@ export async function POST(request: Request) {
       const games = await fetchPlayerGames(
         platform as ScoutPlatform,
         normalizedUsername,
-        maxGames
+        { maxGames, monthsBack, useCache: true }
       );
 
       if (games.length === 0) {
@@ -117,12 +119,16 @@ export async function POST(request: Request) {
         },
       });
 
-      const report = analyzeGames(
+      const report = buildFullScoutReport(
         platform as ScoutPlatform,
         normalizedUsername,
         games,
-        profile
+        profile,
+        { monthsBack }
       );
+      report.profile.gamesAnalyzed = report.normalizedGames.length;
+
+      const { normalizedGames: _ng, ...reportForCache } = report;
 
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
       const result = await prisma.scoutAnalysisResult.upsert({
@@ -135,12 +141,12 @@ export async function POST(request: Request) {
         create: {
           platform,
           username: normalizedUsername.toLowerCase(),
-          report: JSON.stringify(report),
+          report: JSON.stringify({ ...reportForCache, normalizedGames: [] }),
           gameCount: report.profile.gamesAnalyzed,
           expiresAt,
         },
         update: {
-          report: JSON.stringify(report),
+          report: JSON.stringify({ ...reportForCache, normalizedGames: [] }),
           gameCount: report.profile.gamesAnalyzed,
           cachedAt: new Date(),
           expiresAt,

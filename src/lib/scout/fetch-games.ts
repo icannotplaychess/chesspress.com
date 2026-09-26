@@ -1,6 +1,11 @@
 import { Chess } from "chess.js";
 import type { ScoutPlatform } from "@/lib/scout/types";
 
+import {
+  getCachedGames,
+  setCachedGames,
+} from "@/lib/scout/game-cache";
+
 export interface RawGame {
   id: string;
   pgn: string;
@@ -11,19 +16,54 @@ export interface RawGame {
   playedAt?: string;
   openingEco?: string;
   openingName?: string;
+  opponentRating?: number;
+  gameUrl?: string;
 }
 
-const MAX_GAMES = 200;
+const MAX_GAMES = 225;
+
+export interface FetchGamesOptions {
+  maxGames?: number;
+  monthsBack?: number;
+  useCache?: boolean;
+}
 
 export async function fetchPlayerGames(
   platform: ScoutPlatform,
   username: string,
-  maxGames = MAX_GAMES
+  options: FetchGamesOptions = {}
 ): Promise<RawGame[]> {
-  if (platform === "lichess") {
-    return fetchLichessGames(username, maxGames);
+  const maxGames = options.maxGames ?? MAX_GAMES;
+  const monthsBack = options.monthsBack ?? 6;
+  const useCache = options.useCache ?? true;
+  const normalizedUsername = username.trim();
+
+  if (useCache) {
+    const cached = getCachedGames(platform, normalizedUsername);
+    if (cached) {
+      return filterByMonths(cached, monthsBack).slice(0, maxGames);
+    }
   }
-  return fetchChesscomGames(username, maxGames);
+
+  const games =
+    platform === "lichess"
+      ? await fetchLichessGames(normalizedUsername, maxGames * 2)
+      : await fetchChesscomGames(normalizedUsername, maxGames * 2, monthsBack);
+
+  if (useCache) {
+    setCachedGames(platform, normalizedUsername, games);
+  }
+
+  return filterByMonths(games, monthsBack).slice(0, maxGames);
+}
+
+function filterByMonths(games: RawGame[], monthsBack: number): RawGame[] {
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - monthsBack);
+  return games.filter((g) => {
+    if (!g.playedAt) return true;
+    return new Date(g.playedAt) >= cutoff;
+  });
 }
 
 export async function fetchPlayerProfile(
@@ -89,16 +129,20 @@ async function fetchLichessGames(
         continue;
       }
       const headers = chess.header();
+      const whiteName = headers.White ?? g.players?.white?.user?.name ?? "?";
+      const blackName = headers.Black ?? g.players?.black?.user?.name ?? "?";
       games.push({
         id: g.id ?? `lichess-${games.length}`,
         pgn,
-        white: headers.White ?? g.players?.white?.user?.name ?? "?",
-        black: headers.Black ?? g.players?.black?.user?.name ?? "?",
+        white: whiteName,
+        black: blackName,
         result: headers.Result ?? "*",
         timeControl: g.speed ?? headers.TimeControl ?? "unknown",
         playedAt: g.createdAt ? new Date(g.createdAt).toISOString() : undefined,
         openingEco: g.opening?.eco,
         openingName: g.opening?.name,
+        opponentRating: undefined,
+        gameUrl: g.id ? `https://lichess.org/${g.id}` : undefined,
       });
     } catch {
       continue;
@@ -109,8 +153,11 @@ async function fetchLichessGames(
 
 async function fetchChesscomGames(
   username: string,
-  maxGames: number
+  maxGames: number,
+  monthsBack: number
 ): Promise<RawGame[]> {
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - monthsBack);
   const archivesRes = await fetch(
     `https://api.chess.com/pub/player/${username}/games/archives`,
     { next: { revalidate: 3600 } }
@@ -123,6 +170,15 @@ async function fetchChesscomGames(
 
   for (const url of (archives as string[]).reverse()) {
     if (games.length >= maxGames) break;
+    const monthMatch = url.match(/(\d{4})\/(\d{2})$/);
+    if (monthMatch) {
+      const archiveDate = new Date(
+        Number(monthMatch[1]),
+        Number(monthMatch[2]) - 1,
+        1
+      );
+      if (archiveDate < cutoff) continue;
+    }
     const monthRes = await fetch(url, { next: { revalidate: 3600 } });
     if (!monthRes.ok) continue;
     const monthData = await monthRes.json();
@@ -136,16 +192,22 @@ async function fetchChesscomGames(
         continue;
       }
       const headers = chess.header();
+      const whiteName = headers.White ?? g.white?.username ?? "?";
+      const blackName = headers.Black ?? g.black?.username ?? "?";
+      const isWhite =
+        whiteName.toLowerCase() === username.toLowerCase();
       games.push({
         id: g.url ?? `chesscom-${games.length}`,
         pgn: g.pgn,
-        white: headers.White ?? g.white?.username ?? "?",
-        black: headers.Black ?? g.black?.username ?? "?",
+        white: whiteName,
+        black: blackName,
         result: headers.Result ?? "*",
         timeControl: g.time_class ?? headers.TimeControl ?? "unknown",
         playedAt: g.end_time ? new Date(g.end_time * 1000).toISOString() : undefined,
         openingEco: g.eco,
         openingName: g.opening,
+        opponentRating: isWhite ? g.black?.rating : g.white?.rating,
+        gameUrl: g.url,
       });
     }
   }
