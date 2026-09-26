@@ -106,3 +106,107 @@ export interface ScoutReport {
   shreyaSummary: string;
   generatedAt: string;
 }
+
+export interface ScoutFullReport extends ScoutReport {
+  monthsBack: number;
+  subScores: {
+    atk: number;
+    def: number;
+    time: number;
+    mind: number;
+    overall: number;
+  };
+  archetype: { id: string; name: string; tip: string };
+  stalker: {
+    score: number;
+    label: "Low" | "Medium" | "High";
+    signals: {
+      timeTrouble: number;
+      tiltsEasily: number;
+      limitedRepertoire: number;
+      repetitivePatterns: number;
+    };
+  };
+  openingsByColor: {
+    white: {
+      weaknesses: OpeningLineStat[];
+      strengths: OpeningLineStat[];
+    };
+    black: {
+      weaknesses: OpeningLineStat[];
+      strengths: OpeningLineStat[];
+    };
+  };
+  preGameChecklist: { tip: string; justification: string }[];
+  psychology: import("@/lib/scout/compute/psychology").PsychologyMetrics;
+  timeManagement: {
+    blitz: import("@/lib/scout/compute/time-management").TimeManagementStats;
+    rapid: import("@/lib/scout/compute/time-management").TimeManagementStats;
+  };
+  traps: {
+    trapsUsed: TrapEntryStat[];
+    fallsInto: TrapEntryStat[];
+  };
+  frequentRivals: {
+    rivals: RivalStat[];
+    rivalCount: number;
+    nemesisCount: number;
+  };
+  headToHead: RivalStat[];
+  endgameStats: EndgameStat[];
+  lastTen: string;
+  ratingsByFormat: {
+    bullet?: number;
+    blitz?: number;
+    rapid?: number;
+    daily?: number;
+  };
+  recentGames: RecentGameStat[];
+  normalizedGames: import("@/lib/scout/normalized-game").NormalizedGame[];
+}
+
+export interface OpeningLineStat {
+  name: string;
+  eco?: string;
+  moves: string;
+  gameCount: number;
+  lastPlayed: string;
+  winRate: number;
+}
+
+export interface TrapEntryStat {
+  name: string;
+  frequency: string;
+  lastPlayed: string;
+  count: number;
+  winRateLabel: string;
+}
+
+export interface RivalStat {
+  username: string;
+  rating?: number;
+  games: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  winRate: number;
+}
+
+export interface EndgameStat {
+  type: string;
+  games: number;
+  winRate: number;
+}
+
+export interface RecentGameStat {
+  id: string;
+  opponent: string;
+  opponentRating?: number;
+  openingName?: string;
+  timeControl: string;
+  result: "win" | "loss" | "draw";
+  color: "white" | "black";
+  date: string;
+  gameUrl?: string;
+  pgn: string;
+}

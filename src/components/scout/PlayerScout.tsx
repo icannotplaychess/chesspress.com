@@ -1,26 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useState } from "react";
+import { ScoutReportView } from "@/components/scout/ScoutReportView";
 import { CoachPanel } from "@/components/analysis/CoachPanel";
-import { storeAnalysisPgn } from "@/lib/analysis/pgn-transfer";
-import type { ScoutPlatform, ScoutReport } from "@/lib/scout/types";
+import type { ScoutFullReport, ScoutPlatform, ScoutReport } from "@/lib/scout/types";
 
 type Tab = "scout" | "self";
 
+function isFullReport(report: ScoutReport): report is ScoutFullReport {
+  return "subScores" in report && report.subScores !== undefined;
+}
+
 export function PlayerScout() {
-  const router = useRouter();
   const { data: session } = useSession();
   const [tab, setTab] = useState<Tab>("scout");
-  const [platform, setPlatform] = useState<ScoutPlatform>("lichess");
+  const [platform, setPlatform] = useState<ScoutPlatform>("chesscom");
   const [username, setUsername] = useState("");
+  const [monthsBack, setMonthsBack] = useState(6);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [report, setReport] = useState<ScoutReport | null>(null);
-  const [gameFilter, setGameFilter] = useState("all");
+  const [activePlatform, setActivePlatform] = useState<ScoutPlatform>("chesscom");
 
   const analyze = useCallback(
     async (targetUsername: string, targetPlatform: ScoutPlatform) => {
@@ -28,6 +31,7 @@ export function PlayerScout() {
       setReport(null);
       setLoading(true);
       setProgress("Fetching games…");
+      setActivePlatform(targetPlatform);
 
       try {
         const res = await fetch("/api/scout/analyze", {
@@ -36,7 +40,8 @@ export function PlayerScout() {
           body: JSON.stringify({
             platform: targetPlatform,
             username: targetUsername,
-            maxGames: 100,
+            maxGames: 200,
+            monthsBack,
           }),
         });
         const data = await res.json();
@@ -52,7 +57,7 @@ export function PlayerScout() {
         setLoading(false);
       }
     },
-    []
+    [monthsBack]
   );
 
   async function analyzeSelf() {
@@ -70,21 +75,31 @@ export function PlayerScout() {
     await analyze(account.username, account.platform as ScoutPlatform);
   }
 
-  const filteredGames =
-    report?.games.filter((g) => {
-      if (gameFilter === "all") return true;
-      if (gameFilter === "wins") return g.playerResult === "win";
-      if (gameFilter === "losses") return g.playerResult === "loss";
-      return true;
-    }) ?? [];
-
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Player Scout</h1>
         <p className="text-sm text-[var(--muted)] mt-1">
-          Discover strengths, weaknesses, and opening patterns from real games.
+          ChessStalker-style scouting — scores, psychology, openings, and prep checklist.
         </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2 items-center border border-[var(--panel-border)] rounded-lg p-2 bg-[var(--panel)]">
+        <button
+          onClick={() => setPlatform("chesscom")}
+          className={`px-3 py-1.5 rounded text-sm ${platform === "chesscom" ? "bg-[var(--accent-bright)] text-white" : ""}`}
+        >
+          Chess.com
+        </button>
+        <button
+          onClick={() => setPlatform("lichess")}
+          className={`px-3 py-1.5 rounded text-sm ${platform === "lichess" ? "bg-[var(--accent-bright)] text-white" : ""}`}
+        >
+          Lichess.org
+        </button>
+        <button disabled className="px-3 py-1.5 rounded text-sm opacity-40" title="Coming soon">
+          FIDE
+        </button>
       </div>
 
       <div className="flex gap-2 border-b border-[var(--panel-border)]">
@@ -112,20 +127,21 @@ export function PlayerScout() {
 
       {tab === "scout" ? (
         <div className="flex flex-col sm:flex-row gap-3">
-          <select
-            value={platform}
-            onChange={(e) => setPlatform(e.target.value as ScoutPlatform)}
-            className="rounded-lg border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 text-sm"
-          >
-            <option value="lichess">Lichess</option>
-            <option value="chesscom">Chess.com</option>
-          </select>
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Username"
             className="flex-1 rounded-lg border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 text-sm"
           />
+          <select
+            value={monthsBack}
+            onChange={(e) => setMonthsBack(Number(e.target.value))}
+            className="rounded-lg border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 text-sm"
+          >
+            <option value={3}>3 months</option>
+            <option value={6}>6 months</option>
+            <option value={12}>12 months</option>
+          </select>
           <button
             onClick={() => analyze(username.trim(), platform)}
             disabled={loading || !username.trim()}
@@ -136,9 +152,6 @@ export function PlayerScout() {
         </div>
       ) : (
         <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6">
-          <p className="text-sm text-[var(--muted)] mb-4">
-            Uses your connected Chess.com or Lichess account from Settings.
-          </p>
           <button
             onClick={analyzeSelf}
             disabled={loading}
@@ -148,21 +161,15 @@ export function PlayerScout() {
           </button>
           {!session && (
             <p className="text-xs text-[var(--muted)] mt-2">
-              <Link href="/auth/signin" className="text-[var(--accent-text)]">
-                Sign in
-              </Link>{" "}
-              to save reports.
+              <Link href="/auth/signin" className="text-[var(--accent-text)]">Sign in</Link> to save reports.
             </p>
           )}
         </div>
       )}
 
       {loading && (
-        <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6">
+        <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6 animate-pulse">
           <p className="text-sm text-[var(--muted)]">{progress}</p>
-          <div className="mt-3 h-2 rounded-full bg-[#222] overflow-hidden">
-            <div className="h-full bg-[var(--accent-bright)] animate-pulse w-2/3" />
-          </div>
         </div>
       )}
 
@@ -172,252 +179,17 @@ export function PlayerScout() {
         </p>
       )}
 
-      {report && (
+      {report && isFullReport(report) && (
         <>
-          <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6">
-            <h2 className="text-lg font-semibold mb-1">Player Profile</h2>
-            <p className="text-xs text-[var(--muted)] mb-4">
-              Based on {report.profile.gamesAnalyzed} analyzed games
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <div className="text-[var(--muted)]">Username</div>
-                <div className="font-medium">
-                  {report.profile.title ? `${report.profile.title} ` : ""}
-                  {report.profile.username}
-                </div>
-              </div>
-              <div>
-                <div className="text-[var(--muted)]">Platform</div>
-                <div className="font-medium capitalize">{report.profile.platform}</div>
-              </div>
-              <div>
-                <div className="text-[var(--muted)]">Win rate</div>
-                <div className="font-medium">
-                  {Math.round(report.profile.winRate * 100)}%
-                </div>
-              </div>
-              <div>
-                <div className="text-[var(--muted)]">Record</div>
-                <div className="font-medium">
-                  {report.profile.wins}W / {report.profile.draws}D / {report.profile.losses}L
-                </div>
-              </div>
-            </div>
-            {Object.keys(report.profile.ratings).length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-3 text-xs">
-                {Object.entries(report.profile.ratings).map(([k, v]) => (
-                  <span
-                    key={k}
-                    className="rounded-md bg-[#0a0a0a] px-2 py-1 capitalize"
-                  >
-                    {k}: {v}
-                  </span>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <InsightCard title="Strengths" items={report.strengths} positive />
-            <InsightCard title="Weaknesses" items={report.weaknesses} />
-          </div>
-
-          <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6">
-            <h2 className="text-lg font-semibold mb-4">Opening Profile</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              <OpeningList title="White" openings={report.openingsWhite} />
-              <OpeningList title="Black" openings={report.openingsBlack} />
-            </div>
-          </section>
-
-          <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6">
-            <h2 className="text-lg font-semibold mb-4">Performance</h2>
-            <div className="grid md:grid-cols-3 gap-4 mb-6">
-              {report.phases.map((p) => (
-                <div key={p.phase} className="rounded-lg bg-[#0a0a0a] p-4">
-                  <div className="text-xs text-[var(--muted)] capitalize">{p.phase}</div>
-                  <div className="font-medium mt-1">{p.label}</div>
-                  <div className="text-xs text-[var(--muted)] mt-1">
-                    {p.gamesReached} games reached
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-sm font-medium mb-2">Time Controls</h3>
-                {report.timeControls.map((tc) => (
-                  <div
-                    key={tc.speed}
-                    className="flex justify-between text-sm py-1 border-b border-[var(--panel-border)]"
-                  >
-                    <span className="capitalize">{tc.speed}</span>
-                    <span className="text-[var(--muted)]">
-                      {tc.games} games · {Math.round(tc.score * 100)}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div>
-                <h3 className="text-sm font-medium mb-2">By Color</h3>
-                <div className="text-sm space-y-1">
-                  <div>
-                    White: {report.profile.whiteGames} games ·{" "}
-                    {Math.round(report.profile.whiteScore * 100)}% score
-                  </div>
-                  <div>
-                    Black: {report.profile.blackGames} games ·{" "}
-                    {Math.round(report.profile.blackScore * 100)}% score
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {report.patterns.length > 0 && (
-            <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6">
-              <h2 className="text-lg font-semibold mb-4">Recurring Patterns</h2>
-              <div className="space-y-3">
-                {report.patterns.map((p) => (
-                  <div key={p.id} className="rounded-lg bg-[#0a0a0a] p-4">
-                    <div className="font-medium">{p.title}</div>
-                    <p className="text-sm text-[var(--muted)] mt-1">{p.description}</p>
-                    <p className="text-xs text-[var(--muted)] mt-2 capitalize">
-                      {p.evidence} evidence · {p.gameCount} games
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
+          <ScoutReportView report={report} platform={activePlatform} />
           <CoachPanel message={report.shreyaSummary} />
-
-          <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Games</h2>
-              <select
-                value={gameFilter}
-                onChange={(e) => setGameFilter(e.target.value)}
-                className="rounded-md border border-[var(--panel-border)] bg-[#0a0a0a] px-2 py-1 text-xs"
-              >
-                <option value="all">All</option>
-                <option value="wins">Wins</option>
-                <option value="losses">Losses</option>
-              </select>
-            </div>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {filteredGames.slice(0, 50).map((g) => (
-                <div
-                  key={g.id}
-                  className="flex items-center justify-between rounded-lg bg-[#0a0a0a] px-3 py-2 text-sm"
-                >
-                  <div>
-                    <span className="text-[var(--muted)]">
-                      {g.white} vs {g.black}
-                    </span>
-                    {g.openingName && (
-                      <span className="ml-2 text-xs text-[var(--accent-text)]">
-                        {g.openingEco} {g.openingName}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span
-                      className={
-                        g.playerResult === "win"
-                          ? "text-[var(--success)]"
-                          : g.playerResult === "loss"
-                            ? "text-[var(--danger)]"
-                            : "text-[var(--muted)]"
-                      }
-                    >
-                      {g.playerResult}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        storeAnalysisPgn(g.pgn);
-                        router.push("/analysis?from=scout");
-                      }}
-                      className="text-xs text-[var(--accent-text)] hover:underline"
-                    >
-                      Analyze
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
         </>
       )}
-    </div>
-  );
-}
 
-function InsightCard({
-  title,
-  items,
-  positive,
-}: {
-  title: string;
-  items: { title: string; description: string; evidence: string; gameCount: number }[];
-  positive?: boolean;
-}) {
-  return (
-    <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6">
-      <h2 className="text-lg font-semibold mb-4">{title}</h2>
-      {items.length === 0 ? (
-        <p className="text-sm text-[var(--muted)]">Not enough data yet.</p>
-      ) : (
-        <div className="space-y-3">
-          {items.map((item, i) => (
-            <div key={i} className="rounded-lg bg-[#0a0a0a] p-4">
-              <div className={positive ? "text-[var(--success)]" : "text-[var(--danger)]"}>
-                {item.title}
-              </div>
-              <p className="text-sm text-[var(--muted)] mt-1">{item.description}</p>
-              <p className="text-xs text-[var(--muted)] mt-2 capitalize">
-                {item.evidence} evidence · {item.gameCount} games
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function OpeningList({
-  title,
-  openings,
-}: {
-  title: string;
-  openings: { name: string; eco?: string; games: number; score: number }[];
-}) {
-  return (
-    <div>
-      <h3 className="text-sm font-medium mb-2">{title}</h3>
-      {openings.length === 0 ? (
-        <p className="text-xs text-[var(--muted)]">No data</p>
-      ) : (
-        <div className="space-y-1">
-          {openings.slice(0, 8).map((o) => (
-            <div
-              key={`${o.eco}-${o.name}`}
-              className="flex justify-between text-sm py-1 border-b border-[var(--panel-border)]"
-            >
-              <span>
-                {o.eco && <span className="text-[var(--muted)] mr-1">{o.eco}</span>}
-                {o.name}
-              </span>
-              <span className="text-[var(--muted)] text-xs">
-                {o.games}g · {Math.round(o.score * 100)}%
-              </span>
-            </div>
-          ))}
-        </div>
+      {report && !isFullReport(report) && (
+        <p className="text-sm text-[var(--muted)]">
+          Cached legacy report — scout again for the full ChessStalker-style breakdown.
+        </p>
       )}
     </div>
   );
