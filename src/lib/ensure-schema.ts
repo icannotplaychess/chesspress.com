@@ -31,11 +31,27 @@ export async function isSchemaReady(): Promise<boolean> {
 }
 
 function loadMigrationStatements(): string[] {
-  const sqlPath = join(
-    process.cwd(),
-    "prisma/migrations/20250918000000_init/migration.sql"
-  );
-  const sql = readFileSync(sqlPath, "utf-8");
+  const relative = "prisma/migrations/20250918000000_init/migration.sql";
+  const candidates = [
+    join(process.cwd(), relative),
+    join(process.cwd(), ".next/server", relative),
+  ];
+
+  let sql: string | null = null;
+  for (const sqlPath of candidates) {
+    try {
+      sql = readFileSync(sqlPath, "utf-8");
+      break;
+    } catch {
+      // try next path (Vercel serverless bundle layout varies)
+    }
+  }
+
+  if (!sql) {
+    throw new Error(
+      `Migration SQL not found (tried: ${candidates.join(", ")}). Redeploy with prisma/migrations included.`
+    );
+  }
   return sql
     .split("\n")
     .filter((line) => !line.trim().startsWith("--"))
