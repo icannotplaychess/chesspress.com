@@ -5,13 +5,10 @@ import { useSession } from "next-auth/react";
 import { useCallback, useState } from "react";
 import { ScoutReportView } from "@/components/scout/ScoutReportView";
 import { CoachPanel } from "@/components/analysis/CoachPanel";
+import { isCompleteScoutReport } from "@/lib/scout/report-version";
 import type { ScoutFullReport, ScoutPlatform, ScoutReport } from "@/lib/scout/types";
 
 type Tab = "scout" | "self";
-
-function isFullReport(report: ScoutReport): report is ScoutFullReport {
-  return "subScores" in report && report.subScores !== undefined;
-}
 
 export function PlayerScout() {
   const { data: session } = useSession();
@@ -26,11 +23,15 @@ export function PlayerScout() {
   const [activePlatform, setActivePlatform] = useState<ScoutPlatform>("chesscom");
 
   const analyze = useCallback(
-    async (targetUsername: string, targetPlatform: ScoutPlatform) => {
+    async (
+      targetUsername: string,
+      targetPlatform: ScoutPlatform,
+      forceRefresh = false
+    ) => {
       setError("");
       setReport(null);
       setLoading(true);
-      setProgress("Fetching games…");
+      setProgress(forceRefresh ? "Refreshing report…" : "Fetching games…");
       setActivePlatform(targetPlatform);
 
       try {
@@ -42,6 +43,7 @@ export function PlayerScout() {
             username: targetUsername,
             maxGames: 200,
             monthsBack,
+            forceRefresh,
           }),
         });
         const data = await res.json();
@@ -49,8 +51,18 @@ export function PlayerScout() {
           setError(data.error ?? "Analysis failed.");
           return;
         }
-        setProgress(data.cached ? "Loaded cached report." : "Analysis complete.");
-        setReport(data.report);
+
+        if (!isCompleteScoutReport(data.report)) {
+          setError(
+            "The server returned an incomplete report. Try again in a moment — if this persists, the latest app version may not be deployed yet."
+          );
+          return;
+        }
+
+        setProgress(
+          data.cached ? "Loaded cached report." : "Analysis complete."
+        );
+        setReport(data.report as ScoutFullReport);
       } catch {
         setError("Could not reach the server. Try again later.");
       } finally {
@@ -72,7 +84,7 @@ export function PlayerScout() {
       setError("No connected account. Link Chess.com or Lichess in Settings.");
       return;
     }
-    await analyze(account.username, account.platform as ScoutPlatform);
+    await analyze(account.username, account.platform as ScoutPlatform, true);
   }
 
   return (
@@ -80,7 +92,8 @@ export function PlayerScout() {
       <div>
         <h1 className="text-2xl font-bold">Player Scout</h1>
         <p className="text-sm text-[var(--muted)] mt-1">
-          ChessStalker-style scouting — scores, psychology, openings, and prep checklist.
+          Full scouting reports — performance scores, psychology, openings, and a
+          pre-game checklist from real games.
         </p>
       </div>
 
@@ -143,7 +156,7 @@ export function PlayerScout() {
             <option value={12}>12 months</option>
           </select>
           <button
-            onClick={() => analyze(username.trim(), platform)}
+            onClick={() => analyze(username.trim(), platform, true)}
             disabled={loading || !username.trim()}
             className="rounded-lg bg-[var(--accent-bright)] px-6 py-2 text-sm text-white disabled:opacity-50"
           >
@@ -161,7 +174,10 @@ export function PlayerScout() {
           </button>
           {!session && (
             <p className="text-xs text-[var(--muted)] mt-2">
-              <Link href="/auth/signin" className="text-[var(--accent-text)]">Sign in</Link> to save reports.
+              <Link href="/auth/signin" className="text-[var(--accent-text)]">
+                Sign in
+              </Link>{" "}
+              to save reports.
             </p>
           )}
         </div>
@@ -179,17 +195,14 @@ export function PlayerScout() {
         </p>
       )}
 
-      {report && isFullReport(report) && (
+      {report && isCompleteScoutReport(report) && (
         <>
-          <ScoutReportView report={report} platform={activePlatform} />
+          <ScoutReportView
+            report={report as ScoutFullReport}
+            platform={activePlatform}
+          />
           <CoachPanel message={report.shreyaSummary} />
         </>
-      )}
-
-      {report && !isFullReport(report) && (
-        <p className="text-sm text-[var(--muted)]">
-          Cached legacy report — scout again for the full ChessStalker-style breakdown.
-        </p>
       )}
     </div>
   );

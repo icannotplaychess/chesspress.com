@@ -4,14 +4,42 @@ import { prisma } from "@/lib/db";
 import { requireUser, unauthorized } from "@/lib/auth/session";
 import { fetchPlayerGames, fetchPlayerProfile } from "@/lib/scout/fetch-games";
 import { buildFullScoutReport } from "@/lib/scout/build-full-report";
-import type { ScoutPlatform } from "@/lib/scout/types";
+import {
+  filterGamesByMonths,
+  normalizeRawGames,
+} from "@/lib/scout/normalized-game";
+import {
+  isCompleteScoutReport,
+  SCOUT_REPORT_VERSION,
+} from "@/lib/scout/report-version";
+import type { ScoutFullReport, ScoutPlatform } from "@/lib/scout/types";
 
 const schema = z.object({
   platform: z.enum(["chesscom", "lichess"]),
   username: z.string().min(1).max(64),
   maxGames: z.number().min(10).max(225).optional(),
   monthsBack: z.number().min(1).max(24).optional(),
+  forceRefresh: z.boolean().optional(),
 });
+
+async function attachNormalizedGames(
+  report: ScoutFullReport,
+  platform: ScoutPlatform,
+  username: string,
+  monthsBack: number,
+  maxGames: number
+): Promise<ScoutFullReport> {
+  const games = await fetchPlayerGames(platform, username, {
+    maxGames,
+    monthsBack,
+    useCache: true,
+  });
+  const normalized = filterGamesByMonths(
+    normalizeRawGames(games, platform, username),
+    monthsBack
+  );
+  return { ...report, normalizedGames: normalized };
+}
 
 export async function POST(request: Request) {
   const user = await requireUser();
@@ -27,17 +55,40 @@ export async function POST(request: Request) {
     const { platform, username } = parsed.data;
     const maxGames = parsed.data.maxGames ?? 200;
     const monthsBack = parsed.data.monthsBack ?? 6;
+    const forceRefresh = parsed.data.forceRefresh ?? false;
     const normalizedUsername = username.trim();
+    const platformKey = platform as ScoutPlatform;
 
-    // Check cache (24h)
-    const cached = await prisma.scoutAnalysisResult.findUnique({
-      where: {
-        platform_username: { platform, username: normalizedUsername.toLowerCase() },
-      },
-    });
-    if (cached && cached.expiresAt > new Date()) {
-      const report = JSON.parse(cached.report);
-      return NextResponse.json({ jobId: null, report, cached: true });
+    if (!forceRefresh) {
+      const cached = await prisma.scoutAnalysisResult.findUnique({
+        where: {
+          platform_username: {
+            platform,
+            username: normalizedUsername.toLowerCase(),
+          },
+        },
+      });
+      if (cached && cached.expiresAt > new Date()) {
+        const report = JSON.parse(cached.report) as ScoutFullReport;
+        if (isCompleteScoutReport(report)) {
+          const withGames = await attachNormalizedGames(
+            report,
+            platformKey,
+            normalizedUsername,
+            monthsBack,
+            maxGames
+          );
+          return NextResponse.json({
+            jobId: null,
+            report: withGames,
+            cached: true,
+          });
+        }
+        // Stale report format from an older deploy — delete and rebuild.
+        await prisma.scoutAnalysisResult.delete({
+          where: { id: cached.id },
+        });
+      }
     }
 
     const job = await prisma.scoutAnalysisJob.create({
@@ -50,12 +101,8 @@ export async function POST(request: Request) {
       },
     });
 
-    // Run analysis (async in background for large sets — here inline with progress updates)
     try {
-      const profile = await fetchPlayerProfile(
-        platform as ScoutPlatform,
-        normalizedUsername
-      );
+      const profile = await fetchPlayerProfile(platformKey, normalizedUsername);
       if (!profile.exists) {
         await prisma.scoutAnalysisJob.update({
           where: { id: job.id },
@@ -75,11 +122,11 @@ export async function POST(request: Request) {
         data: { status: "fetching", progress: 20, message: "Fetching games…" },
       });
 
-      const games = await fetchPlayerGames(
-        platform as ScoutPlatform,
-        normalizedUsername,
-        { maxGames, monthsBack, useCache: true }
-      );
+      const games = await fetchPlayerGames(platformKey, normalizedUsername, {
+        maxGames,
+        monthsBack,
+        useCache: !forceRefresh,
+      });
 
       if (games.length === 0) {
         await prisma.scoutAnalysisJob.update({
@@ -120,15 +167,16 @@ export async function POST(request: Request) {
       });
 
       const report = buildFullScoutReport(
-        platform as ScoutPlatform,
+        platformKey,
         normalizedUsername,
         games,
         profile,
         { monthsBack }
       );
       report.profile.gamesAnalyzed = report.normalizedGames.length;
+      report.reportVersion = SCOUT_REPORT_VERSION;
 
-      const { normalizedGames: _ng, ...reportForCache } = report;
+      const { normalizedGames, ...reportForCache } = report;
 
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
       const result = await prisma.scoutAnalysisResult.upsert({
@@ -141,12 +189,20 @@ export async function POST(request: Request) {
         create: {
           platform,
           username: normalizedUsername.toLowerCase(),
-          report: JSON.stringify({ ...reportForCache, normalizedGames: [] }),
+          report: JSON.stringify({
+            ...reportForCache,
+            normalizedGames: [],
+            reportVersion: SCOUT_REPORT_VERSION,
+          }),
           gameCount: report.profile.gamesAnalyzed,
           expiresAt,
         },
         update: {
-          report: JSON.stringify({ ...reportForCache, normalizedGames: [] }),
+          report: JSON.stringify({
+            ...reportForCache,
+            normalizedGames: [],
+            reportVersion: SCOUT_REPORT_VERSION,
+          }),
           gameCount: report.profile.gamesAnalyzed,
           cachedAt: new Date(),
           expiresAt,

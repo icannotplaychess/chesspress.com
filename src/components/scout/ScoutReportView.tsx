@@ -339,7 +339,7 @@ export function ScoutReportView({ report, platform }: ScoutReportViewProps) {
       )}
       {studioOpen && report.normalizedGames.length === 0 && (
         <p className="text-sm text-[var(--muted)] text-center">
-          Studio needs a fresh scout run (cached reports omit move data). Scout again to explore lines.
+          Load games for this player again to explore lines in Studio (move data is loaded on each scout).
         </p>
       )}
     </div>

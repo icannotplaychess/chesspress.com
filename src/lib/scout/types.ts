@@ -108,6 +108,7 @@ export interface ScoutReport {
 }
 
 export interface ScoutFullReport extends ScoutReport {
+  reportVersion?: number;
   monthsBack: number;
   subScores: {
     atk: number;

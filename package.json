@@ -13,7 +13,7 @@
     "vercel-build": "node scripts/vercel-build.mjs",
     "start": "next start",
     "lint": "eslint",
-    "test:scout": "node --experimental-strip-types --test src/lib/scout/__tests__/compute.test.ts"
+    "test:scout": "npx --yes tsx --test src/lib/scout/__tests__/compute.test.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",

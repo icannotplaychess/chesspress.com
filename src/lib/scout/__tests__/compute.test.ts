@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { computeSubScores } from "../compute/sub-scores.ts";
-import { computeStalkerScore } from "../compute/stalker-score.ts";
-import { SAMPLE_GAMES } from "./fixtures/sample-games.ts";
+import { computeSubScores } from "@/lib/scout/compute/sub-scores";
+import { computeStalkerScore } from "@/lib/scout/compute/stalker-score";
+import { SAMPLE_GAMES } from "@/lib/scout/__tests__/fixtures/sample-games";
 
 test("computeSubScores returns 0-100 values", () => {
   const scores = computeSubScores(SAMPLE_GAMES);

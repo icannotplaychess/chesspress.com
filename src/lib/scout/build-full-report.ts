@@ -18,6 +18,7 @@ import {
   normalizeRawGames,
   type NormalizedGame,
 } from "@/lib/scout/normalized-game";
+import { SCOUT_REPORT_VERSION } from "@/lib/scout/report-version";
 import type { ScoutFullReport, ScoutPlatform } from "@/lib/scout/types";
 
 function lastTenRecord(games: NormalizedGame[]): string {
@@ -71,6 +72,7 @@ export function buildFullScoutReport(
 
   return {
     ...legacy,
+    reportVersion: SCOUT_REPORT_VERSION,
     monthsBack: options.monthsBack,
     subScores,
     archetype,
