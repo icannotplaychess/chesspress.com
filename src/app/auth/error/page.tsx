@@ -6,10 +6,25 @@ import { Suspense } from "react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 
 const MESSAGES: Record<string, { title: string; body: string }> = {
+  MissingAuthSecret: {
+    title: "Server auth not configured",
+    body:
+      "AUTH_SECRET is missing for this deployment (common on Preview URLs). In Vercel → Project → Settings → Environment Variables, set AUTH_SECRET for Production and Preview (generate with: openssl rand -base64 32), then redeploy.",
+  },
+  DatabaseNotConfigured: {
+    title: "Database not linked",
+    body:
+      "This deployment has no Postgres connection. In Vercel → Storage → connect Postgres to the project, then redeploy.",
+  },
+  DatabaseSetup: {
+    title: "Database tables not ready",
+    body:
+      "Postgres is linked but tables could not be created. Open /api/db/setup on this site once, or redeploy. If you use Preview deployments with a new Neon branch, wait a minute and try again.",
+  },
   Configuration: {
     title: "Sign-in configuration error",
     body:
-      "Google sign-in failed on the server. This usually means GOOGLE_CLIENT_SECRET is wrong in Vercel, or the redirect URI is missing in Google Cloud Console. Add https://chesspress-com.vercel.app/api/auth/callback/google as an authorized redirect URI. You can still sign up with email and password.",
+      "Auth failed on the server. Check AUTH_SECRET on this environment (Preview and Production), Google OAuth redirect URIs (include this site's URL + /api/auth/callback/google), or sign up with email and password.",
   },
   OAuthAccountNotLinked: {
     title: "Account already exists",

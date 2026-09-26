@@ -8,16 +8,20 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) return null;
   const userId = session.user.id;
-  const [profile, repertoireCount, gameCount, scoutCount, connected] =
-    await Promise.all([
-      prisma.userProfile.findUnique({ where: { userId } }),
-      prisma.repertoire.count({ where: { userId } }),
-      prisma.game.count({ where: { userId } }),
-      prisma.scoutAnalysisJob.count({
-        where: { userId, status: "complete" },
-      }),
-      prisma.connectedChessAccount.findMany({ where: { userId } }),
-    ]);
+
+  let profile = await prisma.userProfile.findUnique({ where: { userId } });
+  if (!profile) {
+    profile = await prisma.userProfile.create({ data: { userId } });
+  }
+
+  const [repertoireCount, gameCount, scoutCount, connected] = await Promise.all([
+    prisma.repertoire.count({ where: { userId } }),
+    prisma.game.count({ where: { userId } }),
+    prisma.scoutAnalysisJob.count({
+      where: { userId, status: "complete" },
+    }),
+    prisma.connectedChessAccount.findMany({ where: { userId } }),
+  ]);
 
   const displayName =
     profile?.displayName ?? session.user.name ?? session.user.email?.split("@")[0];

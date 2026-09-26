@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
     "/api/health": ["./prisma/migrations/**/*"],
     "/api/auth/register": ["./prisma/migrations/**/*"],
     "/api/auth/[...nextauth]": ["./prisma/migrations/**/*"],
+    "/dashboard": ["./prisma/migrations/**/*"],
+    "/practice": ["./prisma/migrations/**/*"],
+    "/repertoires": ["./prisma/migrations/**/*"],
+    "/scout": ["./prisma/migrations/**/*"],
+    "/settings": ["./prisma/migrations/**/*"],
   },
   async headers() {
     return [
