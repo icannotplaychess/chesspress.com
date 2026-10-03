@@ -6,16 +6,14 @@ interface CoachPanelProps {
 
 export function CoachPanel({ message }: CoachPanelProps) {
   return (
-    <div className="rounded-lg border border-[var(--panel-border)] bg-[var(--panel)] p-4">
+    <div className="cp-card mb-0">
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-10 h-10 rounded-full bg-[var(--accent)] flex items-center justify-center text-lg font-bold text-white">
+        <div className="shrink-0 w-10 h-10 rounded-full bg-[var(--brand)] flex items-center justify-center text-lg font-bold text-[var(--brand-ink)]">
           S
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-[var(--accent-text)] mb-1">
-            Shreya
-          </h3>
-          <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-line">
+          <span className="font-mono-label">Coach — Shreya</span>
+          <p className="text-sm leading-relaxed text-[var(--ink)] whitespace-pre-line mt-2 mb-0">
             {message}
           </p>
         </div>

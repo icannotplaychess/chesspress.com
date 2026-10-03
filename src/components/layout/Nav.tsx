@@ -7,11 +7,11 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", auth: true },
-  { href: "/explorer", label: "Explorer", auth: false },
-  { href: "/repertoires", label: "Repertoires", auth: true },
   { href: "/practice", label: "Practice", auth: true },
-  { href: "/scout", label: "Player Scout", auth: true },
+  { href: "/explorer", label: "Explorer", auth: false },
   { href: "/analysis", label: "Analysis", auth: false },
+  { href: "/repertoires", label: "Repertoires", auth: true },
+  { href: "/scout", label: "Scout", auth: true },
 ];
 
 export function Nav() {

@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { LearnTrainer } from "@/components/practice/LearnTrainer";
 import { PracticeTrainer } from "@/components/practice/PracticeTrainer";
+import { PageContainer } from "@/components/ui/PageContainer";
+import { PageHero } from "@/components/ui/PageHero";
 import type { PracticeMode } from "@/lib/repertoire/types";
 
 function PracticeContent() {
@@ -16,7 +18,7 @@ function PracticeContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-1 border-b border-[var(--panel-border)]">
+      <div className="flex gap-2">
         <TabLink
           href={buildHref("learn", rep, line)}
           active={step === "learn"}
@@ -77,24 +79,29 @@ function TabLink({
   return (
     <Link
       href={href}
-      className={`flex-1 px-4 py-3 text-left border-b-2 transition-colors ${
-        active
-          ? "border-[var(--accent-bright)] text-foreground"
-          : "border-transparent text-[var(--muted)] hover:text-foreground"
-      }`}
+      className={`cp-tab no-underline flex flex-col ${active ? "on" : ""}`}
     >
-      <div className="text-sm font-medium">{label}</div>
-      <div className="text-xs mt-0.5 opacity-80">{sub}</div>
+      <span className="text-sm font-medium">{label}</span>
+      <span className="text-xs mt-0.5 opacity-80 font-normal normal-case tracking-normal">
+        {sub}
+      </span>
     </Link>
   );
 }
 
 export default function PracticePage() {
   return (
-    <div className="flex-1 max-w-[900px] mx-auto w-full px-4 py-6">
-      <Suspense fallback={<p className="text-[var(--muted)]">Loading…</p>}>
+    <PageContainer className="py-6">
+      <PageHero
+        kicker="Learn & practice"
+        title="train the"
+        titleItalic="lines."
+        description="Learn each move with Shreya, then practice from memory with spaced repetition until your repertoire is automatic."
+        align="center"
+      />
+      <Suspense fallback={<p className="text-[var(--mute)]">Loading…</p>}>
         <PracticeContent />
       </Suspense>
-    </div>
+    </PageContainer>
   );
 }

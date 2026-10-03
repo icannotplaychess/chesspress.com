@@ -2,6 +2,8 @@
 
 import { signOut, useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
+import { PageContainer } from "@/components/ui/PageContainer";
+import { PageHero } from "@/components/ui/PageHero";
 
 interface SettingsData {
   email?: string;
@@ -105,13 +107,14 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-sm text-[var(--muted)] mt-1">
-          Account, connected platforms, and coach preferences.
-        </p>
-      </div>
+    <PageContainer className="py-8 space-y-8 max-w-2xl">
+      <PageHero
+        kicker="Settings"
+        title="your account"
+        titleItalic="& coach."
+        description="Account, connected platforms, and how Shreya explains your chess."
+        align="left"
+      />
 
       {message && (
         <p className="text-sm text-[var(--success)] bg-[var(--success)]/10 rounded-lg px-4 py-2">
@@ -124,15 +127,15 @@ export function SettingsPage() {
         </p>
       )}
 
-      <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6 space-y-4">
-        <h2 className="font-semibold">Account</h2>
+      <section className="cp-card space-y-4 mb-0">
+        <h2 className="cp-h2 text-[20px]">Account</h2>
         <p className="text-sm text-[var(--muted)]">{settings?.email ?? session?.user?.email}</p>
         <div>
           <label className="block text-xs text-[var(--muted)] mb-1">Display name</label>
           <input
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
+            className="cp-input"
           />
         </div>
         {settings?.hasPassword && (
@@ -143,7 +146,7 @@ export function SettingsPage() {
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
+                className="cp-input"
               />
             </div>
             <div>
@@ -152,12 +155,12 @@ export function SettingsPage() {
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
+                className="cp-input"
               />
             </div>
             <button
               onClick={changePassword}
-              className="rounded-md border border-[var(--panel-border)] px-4 py-2 text-sm"
+              className="cp-ghost"
             >
               Change password
             </button>
@@ -165,7 +168,7 @@ export function SettingsPage() {
         )}
         <button
           onClick={saveProfile}
-          className="rounded-md bg-[var(--accent-bright)] px-4 py-2 text-sm text-white"
+          className="cp-btn"
         >
           Save
         </button>
@@ -177,8 +180,8 @@ export function SettingsPage() {
         </button>
       </section>
 
-      <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6 space-y-4">
-        <h2 className="font-semibold">Connected Accounts</h2>
+      <section className="cp-card space-y-4 mb-0">
+        <h2 className="cp-h2 text-[20px]">Connected accounts</h2>
         <p className="text-xs text-[var(--muted)]">
           Link your chess accounts to import games and analyze your own play. We never
           ask for your chess passwords.
@@ -217,25 +220,21 @@ export function SettingsPage() {
           <button
             onClick={connectAccount}
             disabled={!connectUsername.trim()}
-            className="rounded-md bg-[var(--accent-bright)] px-4 py-2 text-sm text-white disabled:opacity-50"
+            className="cp-btn disabled:opacity-50"
           >
             Connect
           </button>
         </div>
       </section>
 
-      <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6 space-y-4">
-        <h2 className="font-semibold">Coach — Shreya</h2>
+      <section className="cp-card space-y-4 mb-0">
+        <h2 className="cp-h2 text-[20px]">Coach — Shreya</h2>
         <div className="grid grid-cols-3 gap-2">
           {(["serious", "balanced", "chaotic"] as const).map((p) => (
             <button
               key={p}
               onClick={() => setCoachPersonality(p)}
-              className={`rounded-lg border p-3 text-sm capitalize ${
-                coachPersonality === p
-                  ? "border-[var(--accent-bright)] bg-[var(--accent)]/20"
-                  : "border-[var(--panel-border)]"
-              }`}
+              className={`cp-tab capitalize ${coachPersonality === p ? "on" : ""}`}
             >
               {p}
             </button>
@@ -243,7 +242,7 @@ export function SettingsPage() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 p-6">
+      <section className="cp-card mb-0 border-[var(--bad)]/30 bg-[var(--bad)]/5">
         <h2 className="font-semibold text-[var(--danger)]">Danger Zone</h2>
         <p className="text-sm text-[var(--muted)] mt-1 mb-4">
           Permanently delete your account and all associated data.
@@ -255,6 +254,6 @@ export function SettingsPage() {
           Delete account
         </button>
       </section>
-    </div>
+    </PageContainer>
   );
 }

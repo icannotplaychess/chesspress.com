@@ -29,7 +29,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "ChessPress — Chess Improvement Platform",
   description:
-    "Adaptive opening training, Stockfish analysis, Game Review, and your AI coach Shreya.",
+    "Learn openings, practice with spaced repetition, explore the database, analyze with Stockfish, and build repertoires.",
 };
 
 export default function RootLayout({

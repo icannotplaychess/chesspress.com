@@ -415,3 +415,95 @@ body {
 .chess-notation {
   font-family: var(--font-jetbrains), ui-monospace, monospace;
 }
+
+.cp-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: 14px var(--font-inter), system-ui, sans-serif;
+}
+
+.cp-stat-value {
+  font: 400 36px var(--font-instrument-serif), Georgia, serif;
+  line-height: 1;
+}
+
+.cp-rep-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.cp-rep-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.cp-rep-card h3 {
+  margin: 0;
+  font: 400 24px var(--font-instrument-serif), Georgia, serif;
+}
+
+.cp-add-card {
+  border-style: dashed;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--mute);
+  cursor: pointer;
+  min-height: 140px;
+}
+
+.cp-eng-score {
+  font: 400 46px var(--font-instrument-serif), Georgia, serif;
+  line-height: 1;
+}
+
+.cp-engine-line {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  font: 12px var(--font-jetbrains), ui-monospace, monospace;
+  color: var(--mute);
+}
+
+.cp-engine-line b {
+  color: var(--brand);
+}
+
+.cp-wdl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.cp-wdl div {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px;
+  text-align: center;
+}
+
+.cp-wdl b {
+  display: block;
+  font: 400 24px var(--font-instrument-serif), Georgia, serif;
+}
+
+.cp-mv-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 38px;
+  gap: 8px;
+  align-items: center;
+  font: 13px var(--font-jetbrains), ui-monospace, monospace;
+  margin: 9px 0;
+}

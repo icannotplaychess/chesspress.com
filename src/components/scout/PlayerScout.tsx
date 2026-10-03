@@ -6,6 +6,7 @@ import { useCallback, useState } from "react";
 import { ScoutReportView } from "@/components/scout/ScoutReportView";
 import { CoachPanel } from "@/components/analysis/CoachPanel";
 import { PageContainer } from "@/components/ui/PageContainer";
+import { PageHero } from "@/components/ui/PageHero";
 import type { ScoutFullReport, ScoutPlatform, ScoutReport } from "@/lib/scout/types";
 
 type Tab = "scout" | "self";
@@ -78,13 +79,13 @@ export function PlayerScout() {
 
   return (
     <PageContainer className="py-8 space-y-8">
-      <section className="text-center py-6">
-        <div className="font-mono-label">Player scout · est. 2026</div>
-        <h1 className="font-serif font-normal text-[clamp(40px,7vw,72px)] leading-[0.95] my-3">
-          know your opponent,
-          <i className="block text-[var(--brand)]">get in the room.</i>
-        </h1>
-      </section>
+      <PageHero
+        kicker="Player scout"
+        title="prep for"
+        titleItalic="your game."
+        description="Optional deep reports from real games — strengths, weaknesses, and a checklist. One feature in your improvement stack."
+        align="left"
+      />
 
       <div className="cp-nav-shell !mx-0 !max-w-none">
         <button

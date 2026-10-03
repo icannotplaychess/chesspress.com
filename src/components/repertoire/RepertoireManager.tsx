@@ -37,44 +37,37 @@ export function RepertoireManager() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Repertoires</h1>
-          <p className="text-sm text-[var(--muted)] mt-1">
-            Build and manage your opening repertoires. Practice until every line is memorized.
-          </p>
-        </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="rounded-md bg-[var(--accent-bright)] px-4 py-2 text-sm text-white"
-        >
-          + New Repertoire
+      <div className="flex justify-end">
+        <button type="button" onClick={() => setShowCreate(true)} className="cp-btn">
+          + New repertoire
         </button>
       </div>
 
       {repertoires.length === 0 ? (
-        <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-12 text-center">
+        <div className="cp-card mb-0 p-12 text-center">
           <p className="text-lg mb-2">No repertoire yet.</p>
           <p className="text-sm text-[var(--muted)] mb-4">
             Create your first repertoire or explore openings and add lines.
           </p>
           <div className="flex gap-3 justify-center">
-            <button
-              onClick={() => setShowCreate(true)}
-              className="rounded-md bg-[var(--accent-bright)] px-4 py-2 text-sm text-white"
-            >
-              Create Repertoire
+            <button type="button" onClick={() => setShowCreate(true)} className="cp-btn">
+              Create repertoire
             </button>
-            <Link
-              href="/explorer"
-              className="rounded-md border border-[var(--panel-border)] px-4 py-2 text-sm hover:bg-[var(--bg)]"
-            >
-              Explore Openings
+            <Link href="/explorer" className="cp-ghost no-underline inline-flex items-center">
+              Explore openings
             </Link>
           </div>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="cp-rep-grid">
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="cp-card cp-add-card cp-rep-card mb-0"
+          >
+            <h3>+ New repertoire</h3>
+            <p className="text-sm text-[var(--mute)] m-0">Create and track mastery</p>
+          </button>
           {repertoires.map((rep) => {
             const mastery = repertoireMastery(rep.lines);
             const toLearn = linesNeedingLesson(rep.lines);
@@ -82,75 +75,70 @@ export function RepertoireManager() {
             const expanded = expandedId === rep.id;
 
             return (
-              <div
-                key={rep.id}
-                className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] overflow-hidden"
-              >
-                <div className="p-4 flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-lg font-semibold">{rep.name}</h2>
-                    <div className="flex flex-wrap gap-3 mt-1 text-xs text-[var(--muted)]">
-                      <span>{rep.lines.length} lines</span>
-                      <span>{toLearn} to learn</span>
-                      <span>{toPractice} to practice</span>
-                      <span>{mastery}% mastery</span>
-                      <span className="capitalize">{rep.color}</span>
-                    </div>
-                    <div className="mt-2 h-1.5 w-full max-w-xs rounded-full bg-[var(--track)] overflow-hidden">
-                      <div
-                        className="h-full bg-[var(--accent-bright)] transition-all"
-                        style={{ width: `${mastery}%` }}
-                      />
-                    </div>
+              <div key={rep.id} className="cp-card cp-rep-card mb-0 overflow-hidden">
+                <div className="flex flex-col gap-3">
+                  <span className="font-mono-label capitalize">{rep.color}</span>
+                  <h3>{rep.name}</h3>
+                  <p className="text-sm text-[var(--mute)] m-0">
+                    {rep.lines.length} lines · mastery {mastery}%
+                    {toLearn > 0 ? ` · ${toLearn} to learn` : ""}
+                  </p>
+                  <div className="cp-bar good">
+                    <span style={{ width: `${mastery}%` }} />
                   </div>
-                  <div className="flex flex-wrap gap-2 shrink-0">
+                  <div className="flex flex-wrap gap-2">
                     <Link
                       href={`/practice?step=learn&rep=${rep.id}`}
-                      className="rounded-md bg-[var(--accent-bright)] px-3 py-1.5 text-xs text-white"
+                      className="cp-btn text-xs py-2 px-3 no-underline inline-flex"
                     >
                       Learn
                     </Link>
                     <Link
                       href={`/practice?step=practice&mode=tournament&rep=${rep.id}`}
-                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[var(--bg)]"
+                      className="cp-ghost text-xs py-2 px-3 no-underline inline-flex"
                     >
                       Practice
                     </Link>
                     <button
+                      type="button"
                       onClick={() => {
                         setRenameId(rep.id);
                         setRenameValue(rep.name);
                       }}
-                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[var(--bg)]"
+                      className="cp-ghost text-xs py-2 px-3"
                     >
                       Rename
                     </button>
                     <button
+                      type="button"
                       onClick={() => setExpandedId(expanded ? null : rep.id)}
-                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[var(--bg)]"
+                      className="cp-ghost text-xs py-2 px-3"
                     >
                       {expanded ? "Hide" : "Lines"}
                     </button>
                     <button
+                      type="button"
                       onClick={() => duplicate(rep.id)}
-                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[var(--bg)]"
+                      className="cp-ghost text-xs py-2 px-3"
                     >
                       Duplicate
                     </button>
                     <button
+                      type="button"
                       onClick={() => {
                         const pgn = repertoireToPgn(rep.lines);
                         navigator.clipboard.writeText(pgn);
                       }}
-                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[var(--bg)]"
+                      className="cp-ghost text-xs py-2 px-3"
                     >
                       Export
                     </button>
                     <button
+                      type="button"
                       onClick={() => {
                         if (confirm(`Delete "${rep.name}"?`)) remove(rep.id);
                       }}
-                      className="rounded-md border border-[var(--danger)]/50 text-[var(--danger)] px-3 py-1.5 text-xs hover:bg-[var(--danger)]/10"
+                      className="cp-ghost text-xs py-2 px-3 text-[var(--bad)] border-[var(--bad)]/40"
                     >
                       Delete
                     </button>

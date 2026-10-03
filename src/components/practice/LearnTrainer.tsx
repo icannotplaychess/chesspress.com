@@ -162,17 +162,16 @@ export function LearnTrainer({
   if (!sessionActive) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Learn with Shreya</h1>
-          <p className="text-sm text-[var(--muted)] mt-1">
-            New to an opening? Shreya walks you through every move — the ideas,
-            the plans, and why each move matters. Learn first, then practice from
-            memory.
+        <div className="cp-card mb-0 text-sm">
+          <span className="font-mono-label">Learn with Shreya</span>
+          <p className="text-[var(--mute)] mt-2 mb-0">
+            Shreya walks you through every move — ideas, plans, and why each move
+            matters. Learn first, then practice from memory.
           </p>
         </div>
 
-        <div className="rounded-xl border border-[var(--accent-bright)]/40 bg-[var(--accent)]/10 p-4 text-sm">
-          <strong className="text-[var(--accent-text)]">Recommended flow:</strong>
+        <div className="cp-card mb-0 text-sm border-[var(--brand)]/30 bg-[var(--glow)]">
+          <strong className="text-[var(--brand)]">Recommended flow</strong>
           <ol className="mt-2 space-y-1 text-[var(--muted)] list-decimal list-inside">
             <li>Learn the line with Shreya (guided explanations)</li>
             <li>Practice from memory (repeat on mistakes until it sticks)</li>
@@ -184,7 +183,7 @@ export function LearnTrainer({
             <p className="mb-4">Add lines to your repertoire before learning.</p>
             <Link
               href="/explorer"
-              className="rounded-md bg-[var(--accent-bright)] px-4 py-2 text-sm text-white"
+              className="cp-btn"
             >
               Explore Openings
             </Link>
@@ -194,7 +193,7 @@ export function LearnTrainer({
             <p>You&apos;ve learned all your lines with Shreya.</p>
             <Link
               href="/practice?step=practice"
-              className="inline-block rounded-md bg-[var(--accent-bright)] px-4 py-2 text-sm text-white"
+              className="inline-block cp-btn"
             >
               Go to Practice
             </Link>
@@ -207,7 +206,7 @@ export function LearnTrainer({
             </p>
             <button
               onClick={startSession}
-              className="w-full rounded-lg bg-[var(--accent-bright)] py-3 text-sm font-medium text-white"
+              className="w-full cp-btn w-full"
             >
               {initialLineId ? "Learn this line" : "Start Learning Session"}
             </button>
@@ -237,7 +236,7 @@ export function LearnTrainer({
 
       <div className="w-full h-1.5 rounded-full bg-[var(--track)] overflow-hidden">
         <div
-          className="h-full bg-[var(--accent-bright)] transition-all"
+          className="h-full bg-[var(--brand)] transition-all"
           style={{
             width: lesson
               ? `${Math.round(
@@ -293,7 +292,7 @@ export function LearnTrainer({
           <div className="flex gap-2">
             <button
               onClick={handleContinue}
-              className="rounded-lg bg-[var(--accent-bright)] px-6 py-2.5 text-sm font-medium text-white"
+              className="cp-btn w-full"
             >
               {step === "intro"
                 ? "Start the line"
@@ -328,7 +327,7 @@ export function LearnTrainer({
           </p>
           <Link
             href={practiceHref}
-            className="inline-block rounded-lg bg-[var(--accent-bright)] px-6 py-2.5 text-sm font-medium text-white"
+            className="inline-block cp-btn w-full"
           >
             Practice this line
           </Link>

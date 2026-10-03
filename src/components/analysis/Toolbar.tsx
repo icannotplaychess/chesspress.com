@@ -85,7 +85,7 @@ export function Toolbar({
         <button
           onClick={onAnalyzeGame}
           disabled={isAnalyzingGame}
-          className="rounded-md bg-[var(--accent-bright)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[var(--accent-text)] transition-colors disabled:opacity-50"
+          className="cp-btn text-sm py-2 px-3 disabled:opacity-50"
         >
           {isAnalyzingGame ? "Analyzing…" : "Analyze Game"}
         </button>
@@ -130,7 +130,7 @@ export function Toolbar({
               <ToolButton onClick={() => setShowImport(false)}>Cancel</ToolButton>
               <button
                 onClick={handleImport}
-                className="rounded-md bg-[var(--accent-bright)] px-4 py-1.5 text-sm font-medium text-white"
+                className="cp-btn text-sm py-2 px-4"
               >
                 Load
               </button>
@@ -158,7 +158,7 @@ function ToolButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="rounded-md border border-[var(--panel-border)] bg-[var(--card)] px-3 py-1.5 text-sm hover:bg-[var(--bg)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      className="cp-ghost text-sm py-2 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
     >
       {children}
     </button>
@@ -183,8 +183,8 @@ function TabButton({
       onClick={onClick}
       className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
         active
-          ? "bg-[var(--accent)] text-white"
-          : "text-[var(--muted)] hover:text-foreground"
+          ? "cp-tab on"
+          : "cp-tab"
       }`}
     >
       {children}

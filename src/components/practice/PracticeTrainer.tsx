@@ -372,24 +372,23 @@ export function PracticeTrainer({
     const { totalLines, linesToPractice, needsLesson } = stats();
     return (
       <div className="max-w-2xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Practice</h1>
-          <p className="text-sm text-[var(--muted)] mt-1">
-            Play your moves from memory. Make a mistake and you repeat the whole
-            line until it sticks. Learn the line with Shreya first if you&apos;re new
-            to it.
+        <div className="cp-card mb-0 text-sm">
+          <span className="font-mono-label">Practice session</span>
+          <p className="text-[var(--mute)] mt-2 mb-0">
+            Play your moves from memory. Miss a move and you repeat the line until
+            it sticks.
           </p>
         </div>
 
         {needsLesson > 0 && (
-          <div className="rounded-xl border border-[var(--accent-bright)]/40 bg-[var(--accent)]/10 p-4 text-sm flex items-center justify-between gap-4">
+          <div className="cp-card mb-0 text-sm flex items-center justify-between gap-4 border-[var(--brand)]/30 bg-[var(--glow)]">
             <span>
               {needsLesson} line{needsLesson !== 1 ? "s" : ""} not learned yet —
               study them before practicing.
             </span>
             <Link
               href="/practice?step=learn"
-              className="shrink-0 rounded-md bg-[var(--accent-bright)] px-3 py-1.5 text-xs text-white"
+              className="shrink-0 cp-btn"
             >
               Learn first
             </Link>
@@ -407,7 +406,7 @@ export function PracticeTrainer({
             <p className="mb-4">Create a repertoire and add lines before practicing.</p>
             <Link
               href="/repertoires"
-              className="rounded-md bg-[var(--accent-bright)] px-4 py-2 text-sm text-white"
+              className="cp-btn"
             >
               Go to Repertoires
             </Link>
@@ -439,7 +438,7 @@ export function PracticeTrainer({
 
             <button
               onClick={startSession}
-              className="w-full rounded-lg bg-[var(--accent-bright)] py-3 text-sm font-medium text-white"
+              className="w-full cp-btn w-full"
             >
               Start Practice Session
             </button>
@@ -545,9 +544,9 @@ export function PracticeTrainer({
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-[var(--panel-border)] bg-[var(--panel)] p-3 text-center">
-      <div className="text-2xl font-bold">{value}</div>
-      <div className="text-xs text-[var(--muted)]">{label}</div>
+    <div className="cp-card mb-0 p-3 text-center">
+      <div className="cp-stat-value text-[32px]">{value}</div>
+      <div className="font-mono-label mt-1">{label}</div>
     </div>
   );
 }

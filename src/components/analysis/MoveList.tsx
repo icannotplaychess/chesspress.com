@@ -67,9 +67,9 @@ export function MoveList({
   }
 
   return (
-    <div className="rounded-lg border border-[var(--panel-border)] bg-[var(--panel)] flex flex-col h-full min-h-0">
-      <div className="px-4 py-3 border-b border-[var(--panel-border)]">
-        <h3 className="text-sm font-semibold text-[var(--accent-text)]">Moves</h3>
+    <div className="cp-card mb-0 flex flex-col h-full min-h-0 !p-0 overflow-hidden">
+      <div className="px-[22px] py-3 border-b border-[var(--line)]">
+        <span className="font-mono-label">Moves</span>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-1 text-sm">
         {pairs.length === 0 ? (
