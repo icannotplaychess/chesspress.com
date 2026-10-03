@@ -128,7 +128,7 @@ export function ScoutStudio({
               setOrientation("white");
               resetLine();
             }}
-            className={`px-3 py-1.5 rounded text-sm ${color === "white" ? "bg-[var(--accent-bright)] text-white" : "border border-[var(--panel-border)]"}`}
+            className={`cp-pill ${color === "white" ? "on" : ""}`}
           >
             White
           </button>

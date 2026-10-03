@@ -54,7 +54,7 @@ function ErrorContent() {
       <div className="space-y-3">
         <Link
           href="/auth/signup"
-          className="block w-full text-center rounded-lg bg-[var(--accent-bright)] py-2.5 text-sm font-medium text-white"
+          className="cp-btn block w-full text-center"
         >
           Create account with email
         </Link>
