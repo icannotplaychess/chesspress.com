@@ -67,7 +67,7 @@ export function RepertoireManager() {
             </button>
             <Link
               href="/explorer"
-              className="rounded-md border border-[var(--panel-border)] px-4 py-2 text-sm hover:bg-[#222]"
+              className="rounded-md border border-[var(--panel-border)] px-4 py-2 text-sm hover:bg-[var(--bg)]"
             >
               Explore Openings
             </Link>
@@ -96,7 +96,7 @@ export function RepertoireManager() {
                       <span>{mastery}% mastery</span>
                       <span className="capitalize">{rep.color}</span>
                     </div>
-                    <div className="mt-2 h-1.5 w-full max-w-xs rounded-full bg-[#222] overflow-hidden">
+                    <div className="mt-2 h-1.5 w-full max-w-xs rounded-full bg-[var(--track)] overflow-hidden">
                       <div
                         className="h-full bg-[var(--accent-bright)] transition-all"
                         style={{ width: `${mastery}%` }}
@@ -112,7 +112,7 @@ export function RepertoireManager() {
                     </Link>
                     <Link
                       href={`/practice?step=practice&mode=tournament&rep=${rep.id}`}
-                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[#222]"
+                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[var(--bg)]"
                     >
                       Practice
                     </Link>
@@ -121,19 +121,19 @@ export function RepertoireManager() {
                         setRenameId(rep.id);
                         setRenameValue(rep.name);
                       }}
-                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[#222]"
+                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[var(--bg)]"
                     >
                       Rename
                     </button>
                     <button
                       onClick={() => setExpandedId(expanded ? null : rep.id)}
-                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[#222]"
+                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[var(--bg)]"
                     >
                       {expanded ? "Hide" : "Lines"}
                     </button>
                     <button
                       onClick={() => duplicate(rep.id)}
-                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[#222]"
+                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[var(--bg)]"
                     >
                       Duplicate
                     </button>
@@ -142,7 +142,7 @@ export function RepertoireManager() {
                         const pgn = repertoireToPgn(rep.lines);
                         navigator.clipboard.writeText(pgn);
                       }}
-                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[#222]"
+                      className="rounded-md border border-[var(--panel-border)] px-3 py-1.5 text-xs hover:bg-[var(--bg)]"
                     >
                       Export
                     </button>
@@ -173,7 +173,7 @@ export function RepertoireManager() {
                       rep.lines.map((line) => (
                         <div
                           key={line.id}
-                          className="flex items-center justify-between rounded-lg bg-[#0a0a0a] px-3 py-2 text-sm"
+                          className="flex items-center justify-between rounded-lg bg-[var(--bg)] px-3 py-2 text-sm"
                         >
                           <div>
                             <span className="font-medium">{line.name}</span>
@@ -234,12 +234,12 @@ export function RepertoireManager() {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="e.g. Main White Repertoire"
-              className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm mb-3"
+              className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm mb-3"
             />
             <select
               value={newColor}
               onChange={(e) => setNewColor(e.target.value as Repertoire["color"])}
-              className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm mb-4"
+              className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm mb-4"
             >
               <option value="white">White</option>
               <option value="black">Black</option>
@@ -275,7 +275,7 @@ export function RepertoireManager() {
             <input
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
-              className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm mb-4"
+              className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm mb-4"
             />
             <div className="flex justify-end gap-2">
               <button
@@ -311,7 +311,7 @@ export function RepertoireManager() {
                 setImportPgn({ ...importPgn, name: e.target.value })
               }
               placeholder="Line name"
-              className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm mb-3"
+              className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm mb-3"
             />
             <textarea
               value={importPgn.text}
@@ -319,7 +319,7 @@ export function RepertoireManager() {
                 setImportPgn({ ...importPgn, text: e.target.value })
               }
               placeholder="Paste PGN…"
-              className="w-full h-32 rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm font-mono mb-4 resize-none"
+              className="w-full h-32 rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm font-mono mb-4 resize-none"
             />
             <div className="flex justify-end gap-2">
               <button

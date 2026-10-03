@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useCallback, useState } from "react";
 import { ScoutReportView } from "@/components/scout/ScoutReportView";
 import { CoachPanel } from "@/components/analysis/CoachPanel";
+import { PageContainer } from "@/components/ui/PageContainer";
 import type { ScoutFullReport, ScoutPlatform, ScoutReport } from "@/lib/scout/types";
 
 type Tab = "scout" | "self";
@@ -76,105 +77,111 @@ export function PlayerScout() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Player Scout</h1>
-        <p className="text-sm text-[var(--muted)] mt-1">
-          ChessStalker-style scouting — scores, psychology, openings, and prep checklist.
-        </p>
-      </div>
+    <PageContainer className="py-8 space-y-8">
+      <section className="text-center py-6">
+        <div className="font-mono-label">Player scout · est. 2026</div>
+        <h1 className="font-serif font-normal text-[clamp(40px,7vw,72px)] leading-[0.95] my-3">
+          know your opponent,
+          <i className="block text-[var(--brand)]">get in the room.</i>
+        </h1>
+      </section>
 
-      <div className="flex flex-wrap gap-2 items-center border border-[var(--panel-border)] rounded-lg p-2 bg-[var(--panel)]">
+      <div className="cp-nav-shell !mx-0 !max-w-none">
         <button
+          type="button"
           onClick={() => setPlatform("chesscom")}
-          className={`px-3 py-1.5 rounded text-sm ${platform === "chesscom" ? "bg-[var(--accent-bright)] text-white" : ""}`}
+          className={`cp-pill ${platform === "chesscom" ? "on" : ""}`}
         >
           Chess.com
         </button>
         <button
+          type="button"
           onClick={() => setPlatform("lichess")}
-          className={`px-3 py-1.5 rounded text-sm ${platform === "lichess" ? "bg-[var(--accent-bright)] text-white" : ""}`}
+          className={`cp-pill ${platform === "lichess" ? "on" : ""}`}
         >
           Lichess.org
         </button>
-        <button disabled className="px-3 py-1.5 rounded text-sm opacity-40" title="Coming soon">
+        <button type="button" disabled className="cp-pill" title="Coming soon">
           FIDE
         </button>
+        {tab === "scout" && (
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Username"
+            className="cp-search"
+            aria-label="Player username"
+          />
+        )}
       </div>
 
-      <div className="flex gap-2 border-b border-[var(--panel-border)]">
+      <div className="flex gap-2">
         <button
+          type="button"
           onClick={() => setTab("scout")}
-          className={`px-4 py-2 text-sm border-b-2 -mb-px ${
-            tab === "scout"
-              ? "border-[var(--accent-bright)] text-foreground"
-              : "border-transparent text-[var(--muted)]"
-          }`}
+          className={`cp-tab ${tab === "scout" ? "on" : ""}`}
         >
           Scout a Player
         </button>
         <button
+          type="button"
           onClick={() => setTab("self")}
-          className={`px-4 py-2 text-sm border-b-2 -mb-px ${
-            tab === "self"
-              ? "border-[var(--accent-bright)] text-foreground"
-              : "border-transparent text-[var(--muted)]"
-          }`}
+          className={`cp-tab ${tab === "self" ? "on" : ""}`}
         >
           Analyze My Chess
         </button>
       </div>
 
       {tab === "scout" ? (
-        <div className="flex flex-col sm:flex-row gap-3">
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Username"
-            className="flex-1 rounded-lg border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 text-sm"
-          />
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
           <select
             value={monthsBack}
             onChange={(e) => setMonthsBack(Number(e.target.value))}
-            className="rounded-lg border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 text-sm"
+            className="cp-ghost bg-[var(--card)]"
+            aria-label="Months of games"
           >
             <option value={3}>3 months</option>
             <option value={6}>6 months</option>
             <option value={12}>12 months</option>
           </select>
           <button
+            type="button"
             onClick={() => analyze(username.trim(), platform)}
             disabled={loading || !username.trim()}
-            className="rounded-lg bg-[var(--accent-bright)] px-6 py-2 text-sm text-white disabled:opacity-50"
+            className="cp-btn sm:ml-auto"
           >
             Scout Player
           </button>
         </div>
       ) : (
-        <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6">
+        <div className="cp-card mb-0">
           <button
+            type="button"
             onClick={analyzeSelf}
             disabled={loading}
-            className="rounded-lg bg-[var(--accent-bright)] px-6 py-2.5 text-sm text-white disabled:opacity-50"
+            className="cp-btn"
           >
             Analyze My Games
           </button>
           {!session && (
-            <p className="text-xs text-[var(--muted)] mt-2">
-              <Link href="/auth/signin" className="text-[var(--accent-text)]">Sign in</Link> to save reports.
+            <p className="text-xs text-[var(--mute)] mt-2 mb-0">
+              <Link href="/auth/signin" className="text-[var(--brand)]">
+                Sign in
+              </Link>{" "}
+              to save reports.
             </p>
           )}
         </div>
       )}
 
       {loading && (
-        <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6 animate-pulse">
-          <p className="text-sm text-[var(--muted)]">{progress}</p>
+        <div className="cp-card mb-0 animate-pulse">
+          <p className="text-sm text-[var(--mute)] m-0">{progress}</p>
         </div>
       )}
 
       {error && (
-        <p className="text-sm text-[var(--danger)] bg-[var(--danger)]/10 rounded-lg px-4 py-3">
+        <p className="text-sm text-[var(--bad)] bg-[var(--bad)]/10 rounded-lg px-4 py-3 m-0">
           {error}
         </p>
       )}
@@ -187,10 +194,10 @@ export function PlayerScout() {
       )}
 
       {report && !isFullReport(report) && (
-        <p className="text-sm text-[var(--muted)]">
-          Cached legacy report — scout again for the full ChessStalker-style breakdown.
+        <p className="text-sm text-[var(--mute)]">
+          This report is incomplete. Run scout again to refresh the analysis.
         </p>
       )}
-    </div>
+    </PageContainer>
   );
 }

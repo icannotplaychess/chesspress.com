@@ -44,7 +44,7 @@ export function AddToRepertoireModal({
               value={newRepName}
               onChange={(e) => setNewRepName(e.target.value)}
               placeholder="New repertoire name"
-              className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
             />
             <div className="flex gap-2 justify-end">
               {repertoires.length > 0 && (
@@ -76,12 +76,12 @@ export function AddToRepertoireModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Line name"
-              className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
             />
             <select
               value={selectedId}
               onChange={(e) => setSelectedId(e.target.value)}
-              className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
             >
               {repertoires.map((r) => (
                 <option key={r.id} value={r.id}>

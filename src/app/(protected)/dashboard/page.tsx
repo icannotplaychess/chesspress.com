@@ -135,7 +135,7 @@ function ActionCard({
       className={`rounded-xl border p-5 transition-colors ${
         primary
           ? "border-[var(--accent-bright)] bg-[var(--accent)]/20 hover:bg-[var(--accent)]/30"
-          : "border-[var(--panel-border)] bg-[var(--panel)] hover:bg-[#1a1a1a]"
+          : "border-[var(--panel-border)] bg-[var(--panel)] hover:bg-[var(--card)]"
       }`}
     >
       <h2 className="font-semibold mb-1">{title}</h2>

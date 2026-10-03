@@ -67,7 +67,7 @@ export default function SignUpPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="name"
-            className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
           />
         </div>
         <div>
@@ -78,7 +78,7 @@ export default function SignUpPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
           />
         </div>
         <div>
@@ -90,7 +90,7 @@ export default function SignUpPage() {
             required
             minLength={8}
             autoComplete="new-password"
-            className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
           />
         </div>
         <div>
@@ -101,7 +101,7 @@ export default function SignUpPage() {
             onChange={(e) => setConfirm(e.target.value)}
             required
             autoComplete="new-password"
-            className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
           />
         </div>
         <button

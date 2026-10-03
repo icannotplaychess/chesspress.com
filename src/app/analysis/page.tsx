@@ -1,4 +1,5 @@
 import { AnalysisBoardClient } from "@/components/analysis/AnalysisBoardClient";
+import { PageContainer } from "@/components/ui/PageContainer";
 
 export const metadata = {
   title: "Analysis Board — ChessPress",
@@ -6,14 +7,17 @@ export const metadata = {
 
 export default function AnalysisPage() {
   return (
-    <div className="flex-1 max-w-[1600px] mx-auto w-full px-4 py-6 min-h-0">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold">Analysis Board</h1>
-        <p className="text-sm text-[var(--muted)] mt-1">
+    <PageContainer className="py-6 min-h-0 flex-1 flex flex-col">
+      <section className="mb-6">
+        <div className="font-mono-label">Analysis board</div>
+        <h1 className="cp-h2 text-[clamp(32px,5vw,48px)]">
+          study the <i>position.</i>
+        </h1>
+        <p className="text-sm text-[var(--mute)] mt-2">
           Engine analysis, opening recognition, and coach explanations — all synchronized.
         </p>
-      </div>
+      </section>
       <AnalysisBoardClient />
-    </div>
+    </PageContainer>
   );
 }

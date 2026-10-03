@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", auth: true },
@@ -21,26 +22,21 @@ export function Nav() {
   const visibleItems = NAV_ITEMS.filter((item) => !item.auth || isLoggedIn);
 
   return (
-    <header className="border-b border-[var(--panel-border)] bg-[var(--panel)]">
-      <div className="max-w-[1600px] mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href={isLoggedIn ? "/dashboard" : "/"} className="flex items-center gap-2">
-          <span className="text-lg font-bold text-[var(--accent-text)]">
-            ChessPress
-          </span>
+    <header className="px-5">
+      <div className="cp-nav-shell">
+        <Link href={isLoggedIn ? "/dashboard" : "/"} className="cp-logo">
+          chesspress<i>.</i>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center gap-1 flex-wrap" aria-label="Main">
           {visibleItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const isActive =
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                  isActive
-                    ? "bg-[var(--accent)] text-white"
-                    : "text-[var(--muted)] hover:text-foreground hover:bg-[#222]"
-                }`}
+                className={`cp-pill no-underline ${isActive ? "on" : ""}`}
               >
                 {item.label}
               </Link>
@@ -48,38 +44,32 @@ export function Nav() {
           })}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto flex-wrap">
           {isLoggedIn ? (
             <>
-              <Link
-                href="/settings"
-                className="text-sm text-[var(--muted)] hover:text-foreground px-2"
-              >
+              <Link href="/settings" className="cp-pill no-underline">
                 {session?.user?.name ?? "Settings"}
               </Link>
               <button
+                type="button"
                 onClick={() => signOut({ callbackUrl: "/" })}
-                className="text-xs text-[var(--muted)] hover:text-foreground px-2"
+                className="cp-pill"
+                aria-label="Sign out"
               >
                 Sign out
               </button>
             </>
           ) : (
             <>
-              <Link
-                href="/auth/signin"
-                className="text-sm text-[var(--muted)] hover:text-foreground px-3 py-1.5"
-              >
+              <Link href="/auth/signin" className="cp-pill no-underline">
                 Sign in
               </Link>
-              <Link
-                href="/auth/signup"
-                className="text-sm rounded-md bg-[var(--accent-bright)] px-3 py-1.5 text-white"
-              >
+              <Link href="/auth/signup" className="cp-pill on no-underline">
                 Sign up
               </Link>
             </>
           )}
+          <ThemeToggle />
         </div>
       </div>
     </header>

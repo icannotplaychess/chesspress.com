@@ -132,7 +132,7 @@ export function SettingsPage() {
           <input
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
           />
         </div>
         {settings?.hasPassword && (
@@ -143,7 +143,7 @@ export function SettingsPage() {
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
               />
             </div>
             <div>
@@ -152,7 +152,7 @@ export function SettingsPage() {
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
               />
             </div>
             <button
@@ -186,7 +186,7 @@ export function SettingsPage() {
         {(settings?.connected ?? []).map((c) => (
           <div
             key={c.platform}
-            className="flex items-center justify-between rounded-lg bg-[#0a0a0a] px-4 py-3 text-sm"
+            className="flex items-center justify-between rounded-lg bg-[var(--bg)] px-4 py-3 text-sm"
           >
             <span className="capitalize">
               {c.platform}: <strong>{c.username}</strong>
@@ -203,7 +203,7 @@ export function SettingsPage() {
           <select
             value={connectPlatform}
             onChange={(e) => setConnectPlatform(e.target.value)}
-            className="rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm"
+            className="rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
           >
             <option value="lichess">Lichess</option>
             <option value="chesscom">Chess.com</option>
@@ -212,7 +212,7 @@ export function SettingsPage() {
             value={connectUsername}
             onChange={(e) => setConnectUsername(e.target.value)}
             placeholder="Username"
-            className="flex-1 rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm"
+            className="flex-1 rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
           />
           <button
             onClick={connectAccount}

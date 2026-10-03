@@ -51,10 +51,10 @@ export function ScoutReportView({ report, platform }: ScoutReportViewProps) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col lg:flex-row gap-6">
-        <div className="flex-1 space-y-4">
+      <header className="cp-grid-profile">
+        <div className="cp-card space-y-4 mb-0">
           <div>
-            <h2 className="text-3xl font-bold">{report.profile.username}</h2>
+            <h2 className="cp-h2 text-[32px]">{report.profile.username}</h2>
             <p className="text-sm text-[var(--muted)]">
               Last {report.monthsBack} months · {report.profile.gamesAnalyzed} games
             </p>
@@ -96,9 +96,13 @@ export function ScoutReportView({ report, platform }: ScoutReportViewProps) {
           </div>
         </div>
 
-        <aside className="lg:w-72 shrink-0 rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-4 lg:sticky lg:top-4 lg:self-start">
+        <aside className="cp-card mb-0 lg:sticky lg:top-4 lg:self-start">
+          <div className="flex justify-between items-start gap-2">
+            <h2 className="cp-h2 text-[22px] m-0">Exploitability</h2>
+            <span className="font-mono-label">{report.stalker.label}</span>
+          </div>
           <StalkerGauge score={report.stalker.score} label={report.stalker.label} />
-          <p className="text-xs text-[var(--muted)] mt-2 mb-4">
+          <p className="text-xs text-[var(--mute)] mt-2 mb-4">
             How exploitable {pronoun} are across {report.profile.gamesAnalyzed} games.
             Low = hard target.
           </p>
@@ -109,34 +113,41 @@ export function ScoutReportView({ report, platform }: ScoutReportViewProps) {
         </aside>
       </header>
 
-      <div className="rounded-xl bg-[#1a1a1a] border border-[var(--panel-border)] p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <p className="text-sm">
-          Play against {report.profile.username}&apos;s Twin — practice vs their openings
-          and style.
-        </p>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-[var(--muted)]">
-            Based on {report.profile.gamesAnalyzed} games
-          </span>
-          <button
-            onClick={() => {
-              setTwinToast(true);
-              setTimeout(() => setTwinToast(false), 2500);
-            }}
-            className="rounded-lg bg-[var(--accent-bright)] px-4 py-2 text-sm text-white"
-          >
-            Play the Twin
-          </button>
+      <div className="cp-twin-banner">
+        <div>
+          <h3 className="font-serif text-[26px] font-normal m-0">
+            Play against {report.profile.username}&apos;s <i>Twin</i>
+          </h3>
+          <p className="text-sm text-[#9fb1b0] mt-1 mb-0">
+            Practice vs their real openings and style · based on{" "}
+            {report.profile.gamesAnalyzed} games
+          </p>
         </div>
+        <button
+          type="button"
+          onClick={() => {
+            setTwinToast(true);
+            setTimeout(() => setTwinToast(false), 2500);
+          }}
+          className="cp-btn"
+        >
+          Play the Twin
+        </button>
       </div>
       {twinToast && (
         <p className="text-sm text-[var(--accent-text)]">Coming soon — Twin sparring bot.</p>
       )}
 
-      <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6 space-y-4">
+      <section className="cp-card space-y-4 mb-0">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-lg font-semibold">
-            {hunterMode ? "How to beat them" : "Self-analysis"}
+          <h3 className="cp-h2 text-[22px] m-0">
+            {hunterMode ? (
+              <>
+                How to <i>beat them</i>
+              </>
+            ) : (
+              "Self-analysis"
+            )}
           </h3>
           <div className="flex gap-2 text-sm">
             <button
@@ -184,7 +195,7 @@ export function ScoutReportView({ report, platform }: ScoutReportViewProps) {
           <h4 className="font-medium mb-2">Pre-game checklist</h4>
           <div className="grid sm:grid-cols-2 gap-3">
             {report.preGameChecklist.map((item) => (
-              <div key={item.tip} className="rounded-lg bg-[#0a0a0a] p-3 text-sm">
+              <div key={item.tip} className="rounded-lg bg-[var(--bg)] p-3 text-sm">
                 <strong>{item.tip}</strong>
                 <p className="text-[var(--muted)] text-xs mt-1">{item.justification}</p>
               </div>
@@ -196,7 +207,7 @@ export function ScoutReportView({ report, platform }: ScoutReportViewProps) {
         </div>
       </section>
 
-      <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6">
+      <section className="cp-card p-6">
         <h3 className="text-lg font-semibold mb-2">Frequent Rivals</h3>
         <p className="text-sm text-[var(--muted)] mb-4">
           {report.frequentRivals.rivalCount} rivals · {report.frequentRivals.nemesisCount} have their number
@@ -204,13 +215,13 @@ export function ScoutReportView({ report, platform }: ScoutReportViewProps) {
         <RivalTable rows={report.frequentRivals.rivals} />
       </section>
 
-      <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6">
+      <section className="cp-card p-6">
         <h3 className="text-lg font-semibold mb-2">Head to Head</h3>
         <RivalTable rows={report.headToHead} />
       </section>
 
       <div className="grid lg:grid-cols-[1fr_300px] gap-4">
-        <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6">
+        <section className="cp-card p-6">
           <h3 className="text-lg font-semibold mb-1">Psychology</h3>
           <p className="text-xs text-[var(--muted)] mb-4">
             Mental resilience, 0–100 per dimension
@@ -236,7 +247,7 @@ export function ScoutReportView({ report, platform }: ScoutReportViewProps) {
           </div>
         </section>
 
-        <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-4">
+        <section className="cp-card p-4">
           <div className="flex justify-between items-center mb-3">
             <h3 className="font-semibold">Recent</h3>
             <span className="text-xs text-[var(--muted)]">{report.profile.gamesAnalyzed} games</span>
@@ -260,7 +271,7 @@ export function ScoutReportView({ report, platform }: ScoutReportViewProps) {
         </section>
       </div>
 
-      <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6">
+      <section className="cp-card p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">Time Management</h3>
           <div className="flex gap-2 text-sm">
@@ -294,7 +305,7 @@ export function ScoutReportView({ report, platform }: ScoutReportViewProps) {
         <TrapColumn title="Falls into" items={report.traps.fallsInto} />
       </section>
 
-      <section className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6">
+      <section className="cp-card p-6">
         <h3 className="text-lg font-semibold mb-2">Endgame Statistics</h3>
         <p className="text-sm text-[var(--muted)] mb-4">
           Where {subject} wins or collapses in long games
@@ -303,7 +314,7 @@ export function ScoutReportView({ report, platform }: ScoutReportViewProps) {
           {report.endgameStats.map((row) => (
             <div key={row.type} className="flex items-center gap-3 text-sm">
               <span className="w-40 shrink-0">{row.type}</span>
-              <div className="flex-1 h-2 bg-[#222] rounded overflow-hidden">
+              <div className="flex-1 h-2 bg-[var(--track)] rounded overflow-hidden">
                 <div
                   className="h-full bg-[var(--success)]"
                   style={{ width: `${Math.round(row.winRate * 100)}%` }}
@@ -379,9 +390,34 @@ function RatingPill({
 
 function StalkerGauge({ score, label }: { score: number; label: string }) {
   return (
-    <div className="text-center">
-      <div className="text-4xl font-bold">{score}/100</div>
-      <div className="text-sm text-[var(--accent-text)]">{label} exploitability</div>
+    <div className="ring flex gap-4 items-center my-3">
+      <svg width="92" height="92" viewBox="0 0 92 92" aria-hidden="true">
+        <circle cx="46" cy="46" r="38" fill="none" stroke="var(--track)" strokeWidth="7" />
+        <circle
+          cx="46"
+          cy="46"
+          r="38"
+          fill="none"
+          stroke="var(--warn)"
+          strokeWidth="7"
+          strokeLinecap="round"
+          strokeDasharray={`${(score / 100) * 239} 239`}
+          transform="rotate(-90 46 46)"
+        />
+        <text
+          x="46"
+          y="53"
+          textAnchor="middle"
+          fontFamily="var(--font-instrument-serif), Georgia, serif"
+          fontSize="26"
+          fill="var(--ink)"
+        >
+          {score}
+        </text>
+      </svg>
+      <p className="text-sm text-[var(--mute)] m-0 flex-1">
+        Score reflects patterns across recent games. {label} pressure profile.
+      </p>
     </div>
   );
 }
@@ -393,7 +429,7 @@ function SignalBar({ label, value }: { label: string; value: number }) {
         <span>{label}</span>
         <span>{value}</span>
       </div>
-      <div className="h-2 bg-[#222] rounded">
+      <div className="h-2 bg-[var(--track)] rounded">
         <div
           className="h-full bg-orange-500 rounded"
           style={{ width: `${value}%` }}
@@ -504,7 +540,7 @@ function StatTile({
   alert?: boolean;
 }) {
   return (
-    <div className="rounded-lg bg-[#0a0a0a] p-3">
+    <div className="rounded-lg bg-[var(--bg)] p-3">
       <div className="text-xs text-[var(--muted)]">{title}</div>
       <div className={`text-xl font-bold mt-1 ${alert ? "text-[var(--danger)]" : ""}`}>
         {value}
@@ -521,7 +557,7 @@ function TrapColumn({
   items: ScoutFullReport["traps"]["trapsUsed"];
 }) {
   return (
-    <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-4">
+    <div className="cp-card p-4">
       <h4 className="font-medium mb-3">{title}</h4>
       {items.length === 0 ? (
         <p className="text-sm text-[var(--muted)]">None detected in sample.</p>

@@ -43,7 +43,7 @@ export function MoveList({
         className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-sm chess-notation transition-colors ${
           isActive
             ? "bg-[var(--accent)] text-white"
-            : "hover:bg-[#222] text-foreground"
+            : "hover:bg-[var(--bg)] text-foreground"
         }`}
       >
         {san}

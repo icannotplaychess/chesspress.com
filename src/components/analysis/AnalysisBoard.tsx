@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { consumeAnalysisPgn } from "@/lib/analysis/pgn-transfer";
 import { Chessboard } from "react-chessboard";
 import { Chess, type Square } from "chess.js";
-import { EvaluationBar } from "@/components/analysis/EvaluationBar";
 import { EnginePanel } from "@/components/analysis/EnginePanel";
 import { MoveList } from "@/components/analysis/MoveList";
 import { OpeningPanel } from "@/components/analysis/OpeningPanel";
@@ -18,6 +17,12 @@ import { useLichessExplorer } from "@/hooks/useLichessExplorer";
 import { analyzeFullGame } from "@/lib/engine/game-analyzer";
 import { toWhitePerspective } from "@/lib/engine/evaluation";
 import { generateCoachMessage, generatePhase } from "@/lib/coach/shreya";
+import { BoardWrapper } from "@/components/chess/BoardWrapper";
+import {
+  buildBoardOptions,
+  engineArrow,
+  LAST_MOVE_HIGHLIGHT,
+} from "@/lib/chess/board-theme";
 import type { Arrow } from "react-chessboard";
 
 export function AnalysisBoard() {
@@ -38,18 +43,9 @@ export function AnalysisBoard() {
   const [isAnalyzingGame, setIsAnalyzingGame] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState<string | null>(null);
   const engineArrows = useMemo((): Arrow[] => {
-    if (!analysis?.lines[0]?.pv[0]) return [];
-    const best = analysis.lines[0].pv[0];
-    if (best.length >= 4) {
-      return [
-        {
-          startSquare: best.slice(0, 2),
-          endSquare: best.slice(2, 4),
-          color: "rgba(107, 163, 224, 0.8)",
-        },
-      ];
-    }
-    return [];
+    const best = analysis?.lines[0]?.pv[0];
+    const arrow = best ? engineArrow(best) : null;
+    return arrow ? [arrow] : [];
   }, [analysis]);
 
   const phase = generatePhase(game.currentFen, game.moveNumber);
@@ -95,8 +91,8 @@ export function AnalysisBoard() {
   const squareStyles = useMemo(() => {
     const styles: Record<string, React.CSSProperties> = {};
     if (game.lastMove) {
-      styles[game.lastMove.from] = { backgroundColor: "rgba(155, 199, 0, 0.41)" };
-      styles[game.lastMove.to] = { backgroundColor: "rgba(155, 199, 0, 0.41)" };
+      styles[game.lastMove.from] = { backgroundColor: LAST_MOVE_HIGHLIGHT };
+      styles[game.lastMove.to] = { backgroundColor: LAST_MOVE_HIGHLIGHT };
     }
     return styles;
   }, [game.lastMove]);
@@ -237,35 +233,22 @@ export function AnalysisBoard() {
 
         {/* Center — board */}
         <div className="flex flex-col items-center gap-4 order-1 lg:order-2">
-          <div className="grid grid-cols-[28px_1fr] gap-2 w-full max-w-[min(100%,560px)] items-stretch">
-            <EvaluationBar
-              cp={evalDisplay.cp}
-              mate={evalDisplay.mate}
-              orientation={game.orientation}
-              isAnalyzing={isAnalyzing || !engineReady}
-              hasEval={hasEval}
+          <BoardWrapper
+            cp={evalDisplay.cp}
+            mate={evalDisplay.mate}
+            orientation={game.orientation}
+          >
+            <Chessboard
+              options={buildBoardOptions({
+                position: game.currentFen,
+                boardOrientation: game.orientation,
+                onPieceDrop,
+                allowDragging: game.isAtLatest,
+                arrows: engineArrows,
+                squareStyles,
+              })}
             />
-            <div className="w-full aspect-square min-w-0">
-              <Chessboard
-                options={{
-                  position: game.currentFen,
-                  boardOrientation: game.orientation,
-                  onPieceDrop,
-                  allowDragging: game.isAtLatest,
-                  arrows: engineArrows,
-                  squareStyles,
-                  darkSquareStyle: { backgroundColor: "#2d4a6f" },
-                  lightSquareStyle: { backgroundColor: "#4a6fa5" },
-                  boardStyle: {
-                    borderRadius: "4px",
-                    boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
-                  },
-                  animationDurationInMs: 200,
-                  showNotation: true,
-                }}
-              />
-            </div>
-          </div>
+          </BoardWrapper>
           <CoachPanel message={coachMessage} />
         </div>
 
