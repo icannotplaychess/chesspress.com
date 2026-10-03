@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 :root {
+  --font-instrument-serif: "Instrument Serif", Georgia, serif;
+  --font-inter: Inter, system-ui, sans-serif;
+  --font-jetbrains: "JetBrains Mono", ui-monospace, monospace;
   --bg: #f6f8fb;
   --card: #fff;
   --ink: #0f1a2b;
