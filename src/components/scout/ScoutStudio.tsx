@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { Chessboard } from "react-chessboard";
+import { buildBoardOptions } from "@/lib/chess/board-theme";
 import { Chess, type Square } from "chess.js";
 import type { NormalizedGame } from "@/lib/scout/normalized-game";
 import type { ScoutPlatform } from "@/lib/scout/types";
@@ -147,14 +148,12 @@ export function ScoutStudio({
           <div className="space-y-3">
             <div className="w-full max-w-[420px] aspect-square mx-auto">
               <Chessboard
-                options={{
+                options={buildBoardOptions({
                   position: fen,
                   boardOrientation: orientation,
                   onPieceDrop,
                   allowDragging: true,
-                  darkSquareStyle: { backgroundColor: "#2d4a6f" },
-                  lightSquareStyle: { backgroundColor: "#4a6fa5" },
-                }}
+                })}
               />
             </div>
             <div className="flex flex-wrap gap-2 justify-center text-sm">

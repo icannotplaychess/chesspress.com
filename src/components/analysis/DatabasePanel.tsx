@@ -67,7 +67,7 @@ export function DatabasePanel({
                 <button
                   key={move.uci}
                   onClick={() => onPlayMove(move.uci)}
-                  className="w-full flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-[#222] transition-colors group"
+                  className="w-full flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-[var(--bg)] transition-colors group"
                 >
                   <span className="chess-notation font-medium">{move.san}</span>
                   <div className="flex items-center gap-2">
@@ -111,7 +111,7 @@ function StatBadge({
   color: string;
 }) {
   return (
-    <div className="flex-1 rounded-md bg-[#0a0a0a] px-2 py-1.5 text-center">
+    <div className="flex-1 rounded-md bg-[var(--bg)] px-2 py-1.5 text-center">
       <div className="text-[10px] text-[var(--muted)]">{label}</div>
       <div className="font-semibold" style={{ color }}>
         {value}

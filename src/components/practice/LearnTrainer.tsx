@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { Chessboard } from "react-chessboard";
+import { buildBoardOptions } from "@/lib/chess/board-theme";
 import Link from "next/link";
 import { CoachPanel } from "@/components/analysis/CoachPanel";
 import { useRepertoires } from "@/hooks/useRepertoires";
@@ -179,7 +180,7 @@ export function LearnTrainer({
         </div>
 
         {repertoires.length === 0 ? (
-          <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-8 text-center">
+          <div className="cp-card p-8 text-center">
             <p className="mb-4">Add lines to your repertoire before learning.</p>
             <Link
               href="/explorer"
@@ -189,7 +190,7 @@ export function LearnTrainer({
             </Link>
           </div>
         ) : unlearnedCount === 0 ? (
-          <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-8 text-center space-y-4">
+          <div className="cp-card p-8 text-center space-y-4">
             <p>You&apos;ve learned all your lines with Shreya.</p>
             <Link
               href="/practice?step=practice"
@@ -234,7 +235,7 @@ export function LearnTrainer({
         </button>
       </div>
 
-      <div className="w-full h-1.5 rounded-full bg-[#222] overflow-hidden">
+      <div className="w-full h-1.5 rounded-full bg-[var(--track)] overflow-hidden">
         <div
           className="h-full bg-[var(--accent-bright)] transition-all"
           style={{
@@ -267,19 +268,12 @@ export function LearnTrainer({
 
           <div className="w-full max-w-[360px] aspect-square">
             <Chessboard
-              options={{
+              options={buildBoardOptions({
                 position: boardFen,
                 boardOrientation: orientation,
                 allowDragging: false,
-                darkSquareStyle: { backgroundColor: "#2d4a6f" },
-                lightSquareStyle: { backgroundColor: "#4a6fa5" },
-                boardStyle: {
-                  borderRadius: "4px",
-                  boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
-                },
                 animationDurationInMs: 300,
-                showNotation: true,
-              }}
+              })}
             />
           </div>
 

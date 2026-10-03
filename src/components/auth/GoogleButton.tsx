@@ -19,7 +19,7 @@ export function GoogleButton({ callbackUrl = "/dashboard" }: { callbackUrl?: str
     <button
       type="button"
       onClick={() => signIn("google", { callbackUrl })}
-      className="w-full flex items-center justify-center gap-3 rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-4 py-2.5 text-sm font-medium hover:bg-[#151515] transition-colors"
+      className="w-full flex items-center justify-center gap-3 rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-4 py-2.5 text-sm font-medium hover:bg-[#151515] transition-colors"
     >
       <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden>
         <path

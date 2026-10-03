@@ -76,7 +76,7 @@ function ResetForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
             />
           </div>
           <div>
@@ -86,7 +86,7 @@ function ResetForm() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               required
-              className="w-full rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-3 py-2 text-sm"
             />
           </div>
           <button

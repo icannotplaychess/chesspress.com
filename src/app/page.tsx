@@ -1,85 +1,79 @@
 import Link from "next/link";
+import { PageContainer } from "@/components/ui/PageContainer";
+
+const FEATURES = [
+  {
+    href: "/scout",
+    title: "Player Scout",
+    description:
+      "Analyze your chess or scout any public player on Chess.com or Lichess.",
+  },
+  {
+    href: "/practice?step=learn",
+    title: "Learn & Practice",
+    description:
+      "Shreya teaches each move first, then you drill the line from memory until it sticks.",
+  },
+  {
+    href: "/explorer",
+    title: "Explore Openings",
+    description:
+      "Browse openings with Lichess statistics and Stockfish analysis. Add lines to your repertoire.",
+  },
+  {
+    href: "/repertoires",
+    title: "Repertoires",
+    description:
+      "Create, manage, and track mastery across multiple opening repertoires.",
+  },
+  {
+    href: "/analysis",
+    title: "Analysis Board",
+    description:
+      "Analyze any position with Stockfish, explore the database, and get coach explanations.",
+  },
+];
 
 export default function HomePage() {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-16">
-      <h1 className="text-4xl font-bold mb-4">
-        Welcome to <span className="text-[var(--accent-text)]">ChessPress</span>
-      </h1>
-      <p className="text-lg text-[var(--muted)] mb-8 leading-relaxed">
-        Your chess improvement platform with adaptive opening training, Player Scout,
-        Stockfish analysis, and Shreya — your personal AI coach.
-      </p>
-
-      <div className="flex gap-3 mb-10">
-        <Link
-          href="/auth/signup"
-          className="rounded-lg bg-[var(--accent-bright)] px-6 py-2.5 text-sm font-medium text-white"
-        >
-          Create free account
+    <PageContainer className="pb-8">
+      <section className="text-center py-14 md:py-16">
+        <div className="font-mono-label">Chess improvement · est. 2026</div>
+        <h1 className="font-serif font-normal text-[clamp(46px,9vw,92px)] leading-[0.95] my-4">
+          know your opponent,
+          <i className="block text-[var(--brand)]">get in the room.</i>
+        </h1>
+        <Link href="/scout" className="cp-cta">
+          Scout a player →
         </Link>
-        <Link
-          href="/auth/signin"
-          className="rounded-lg border border-[var(--panel-border)] px-6 py-2.5 text-sm"
-        >
-          Sign in
-        </Link>
-      </div>
+        <div className="flex flex-wrap justify-center gap-3 mt-8">
+          <Link href="/auth/signup" className="cp-btn no-underline inline-block">
+            Create free account
+          </Link>
+          <Link href="/auth/signin" className="cp-ghost no-underline inline-flex items-center">
+            Sign in
+          </Link>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <ActionCard
-          href="/scout"
-          title="Player Scout"
-          description="Analyze your chess or scout any public player on Chess.com or Lichess."
-          primary
-        />
-        <ActionCard
-          href="/practice?step=learn"
-          title="Learn & Practice"
-          description="Shreya teaches each move first, then you drill the line from memory until it sticks."
-        />
-        <ActionCard
-          href="/explorer"
-          title="Explore Openings"
-          description="Browse openings with Lichess statistics and Stockfish analysis. Add lines directly to your repertoire."
-        />
-        <ActionCard
-          href="/repertoires"
-          title="Repertoires"
-          description="Create, manage, and track mastery across multiple opening repertoires."
-        />
-        <ActionCard
-          href="/analysis"
-          title="Analysis Board"
-          description="Analyze any position with Stockfish, explore the database, and get coach explanations."
-        />
+      <div className="cp-grid-2">
+        {FEATURES.map((card, i) => (
+          <Link key={card.href} href={card.href} className="cp-card no-underline text-[var(--ink)] hover:border-[var(--brand)] transition-colors">
+            <h2 className="cp-h2 text-[22px] mb-2">
+              {i === 0 ? (
+                <>
+                  Player <i>Scout</i>
+                </>
+              ) : (
+                card.title
+              )}
+            </h2>
+            <p className="text-sm text-[var(--mute)] leading-relaxed m-0">
+              {card.description}
+            </p>
+          </Link>
+        ))}
       </div>
-    </div>
-  );
-}
-
-function ActionCard({
-  href,
-  title,
-  description,
-  primary,
-}: {
-  href: string;
-  title: string;
-  description: string;
-  primary?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`rounded-xl border p-6 transition-colors ${
-        primary
-          ? "border-[var(--accent-bright)] bg-[var(--accent)]/20 hover:bg-[var(--accent)]/30"
-          : "border-[var(--panel-border)] bg-[var(--panel)] hover:bg-[#1a1a1a]"
-      }`}
-    >
-      <h2 className="text-lg font-semibold mb-2">{title}</h2>
-      <p className="text-sm text-[var(--muted)] leading-relaxed">{description}</p>
-    </Link>
+    </PageContainer>
   );
 }

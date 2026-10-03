@@ -93,7 +93,7 @@ export function Toolbar({
 
       {showImport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-lg rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-6 shadow-2xl">
+          <div className="w-full max-w-lg cp-card p-6 shadow-2xl">
             <h2 className="text-lg font-semibold mb-4">Import Position</h2>
 
             <div className="flex gap-2 mb-4">
@@ -119,7 +119,7 @@ export function Toolbar({
                   ? "Paste PGN here…"
                   : "Paste FEN here…"
               }
-              className="w-full h-40 rounded-lg border border-[var(--panel-border)] bg-[#0a0a0a] p-3 text-sm font-mono resize-none focus:outline-none focus:border-[var(--accent-bright)]"
+              className="w-full h-40 rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] p-3 text-sm font-mono resize-none focus:outline-none focus:border-[var(--accent-bright)]"
             />
 
             {importError && (
@@ -158,7 +158,7 @@ function ToolButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="rounded-md border border-[var(--panel-border)] bg-[#1a1a1a] px-3 py-1.5 text-sm hover:bg-[#222] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      className="rounded-md border border-[var(--panel-border)] bg-[var(--card)] px-3 py-1.5 text-sm hover:bg-[var(--bg)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
     >
       {children}
     </button>

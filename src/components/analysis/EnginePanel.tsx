@@ -58,7 +58,7 @@ export function EnginePanel({ analysis, fen, isAnalyzing, error }: EnginePanelPr
               return (
               <div
                 key={line.multipv}
-                className="rounded-md bg-[#0a0a0a] px-3 py-2 text-xs"
+                className="rounded-md bg-[var(--bg)] px-3 py-2 text-xs"
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-[var(--accent-text)] font-medium">

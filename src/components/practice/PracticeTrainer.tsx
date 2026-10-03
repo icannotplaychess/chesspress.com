@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Chessboard } from "react-chessboard";
+import { buildBoardOptions } from "@/lib/chess/board-theme";
 import { Chess, type Square } from "chess.js";
 import Link from "next/link";
 import { useRepertoires } from "@/hooks/useRepertoires";
@@ -402,7 +403,7 @@ export function PracticeTrainer({
         </div>
 
         {repertoires.length === 0 ? (
-          <div className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] p-8 text-center">
+          <div className="cp-card p-8 text-center">
             <p className="mb-4">Create a repertoire and add lines before practicing.</p>
             <Link
               href="/repertoires"
@@ -421,7 +422,7 @@ export function PracticeTrainer({
                   className={`text-left rounded-lg border p-4 transition-colors ${
                     mode === m.id
                       ? "border-[var(--accent-bright)] bg-[var(--accent)]/20"
-                      : "border-[var(--panel-border)] bg-[var(--panel)] hover:bg-[#1a1a1a]"
+                      : "border-[var(--panel-border)] bg-[var(--panel)] hover:bg-[var(--card)]"
                   }`}
                 >
                   <div className="font-medium">{m.label}</div>
@@ -465,7 +466,7 @@ export function PracticeTrainer({
         </button>
       </div>
 
-      <div className="w-full h-1.5 rounded-full bg-[#222] overflow-hidden">
+      <div className="w-full h-1.5 rounded-full bg-[var(--track)] overflow-hidden">
         <div
           className="h-full bg-[var(--accent-bright)] transition-all"
           style={{ width: `${lineProgress}%` }}
@@ -487,20 +488,12 @@ export function PracticeTrainer({
 
       <div className="w-full max-w-[400px] aspect-square">
         <Chessboard
-          options={{
+          options={buildBoardOptions({
             position: fen,
             boardOrientation: orientation,
             onPieceDrop,
             allowDragging: waitingForUser,
-            darkSquareStyle: { backgroundColor: "#2d4a6f" },
-            lightSquareStyle: { backgroundColor: "#4a6fa5" },
-            boardStyle: {
-              borderRadius: "4px",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
-            },
-            animationDurationInMs: 200,
-            showNotation: true,
-          }}
+          })}
         />
       </div>
 
