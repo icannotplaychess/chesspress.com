@@ -29,10 +29,10 @@ function openingThemes(name: string, eco?: string): string {
   const ecoPrefix = eco?.slice(0, 1) ?? "";
 
   if (lower.includes("italian")) {
-    return "Classical development, quick piece activity, and pressure on the f7 square are the main ideas.";
+    return "Develop fast and aim at f7.";
   }
   if (lower.includes("sicilian")) {
-    return "Black fights for the center from the flank — dynamic piece play and counterattack are key.";
+    return "Flank fight — counterattack when you can.";
   }
   if (lower.includes("french")) {
     return "A solid pawn chain in the center — Black accepts a cramped position for a resilient structure.";
@@ -64,7 +64,7 @@ function openingThemes(name: string, eco?: string): string {
   if (ecoPrefix === "E") {
     return "Indian-style setups — flexible development and long-term positional pressure.";
   }
-  return "Focus on development, king safety, and fighting for central squares.";
+  return "Develop, castle, fight for the center.";
 }
 
 function analyzeMove(
@@ -93,7 +93,7 @@ function analyzeMove(
     ideas.push("King safety first — never delay castling in sharp openings.");
     return {
       title: `${side} castles (${san})`,
-      explanation: `${pronoun} castle with ${san}. Getting the king to safety is essential before opening the position.`,
+      explanation: `${pronoun} castle (${san}) — king safe, then open the game.`,
       ideas,
     };
   }
@@ -104,7 +104,7 @@ function analyzeMove(
       ideas.push("Central pawns control key squares and open lines for pieces.");
       return {
         title: `${side} claims the center (${san})`,
-        explanation: `${pronoun} play ${san} to stake a claim in the center. Controlling d4/e4/d5/e5 gives your pieces more freedom.`,
+        explanation: `${pronoun} play ${san} for the center.`,
         ideas,
       };
     }
@@ -112,7 +112,7 @@ function analyzeMove(
       ideas.push("Flank pawn moves can support the center or prepare piece development.");
       return {
         title: `${side} advances on the flank (${san})`,
-        explanation: `${pronoun} push ${san}, gaining space and preparing to develop pieces behind the pawn chain.`,
+        explanation: `${pronoun} play ${san} for space on the flank.`,
         ideas,
       };
     }
@@ -122,7 +122,7 @@ function analyzeMove(
     ideas.push("Knights belong toward the center — 'knights on the rim are grim.'");
     return {
       title: `${side} develops a knight (${san})`,
-      explanation: `${pronoun} develop with ${san}, bringing a piece into the game and attacking central squares.`,
+      explanation: `${pronoun} develop with ${san} toward the center.`,
       ideas,
     };
   }
@@ -131,7 +131,7 @@ function analyzeMove(
     ideas.push("Active bishops eye key diagonals and support your pawn structure.");
     return {
       title: `${side} develops the bishop (${san})`,
-      explanation: `${pronoun} place the bishop on ${san}, aiming at important squares and completing development.`,
+      explanation: `${pronoun} develop the bishop (${san}).`,
       ideas,
     };
   }
@@ -208,15 +208,14 @@ export function buildLineLesson(line: PracticeLine): LineLesson {
 
   const intro =
     userColor === "both"
-      ? `Let's walk through "${openingName}" move by move. I'll explain what each side is doing and why, so you understand the ideas before memorizing.`
-      : `Let's learn "${openingName}" — you're playing as ${userSide}. I'll explain every move in this line so you understand the ideas before you practice from memory.`;
+      ? `"${openingName}" — quick walkthrough, then you practice from memory.`
+      : `"${openingName}" as ${userSide}. One idea per move, then drill it.`;
 
   return {
     intro,
     openingSummary: openingThemes(openingName, eco),
     moves,
-    practicePrompt:
-      "You now know the ideas behind each move. Practice the line from memory — if you slip up, you'll repeat it until it sticks.",
+    practicePrompt: "Got the ideas? Practice the line from memory.",
   };
 }
 

@@ -133,19 +133,19 @@ export function describeBestMove(fen: string, uci: string): string {
       to: uci.slice(2, 4) as Square,
       promotion: uci.length > 4 ? (uci[4] as "q" | "r" | "b" | "n") : undefined,
     });
-    if (!move) return `The engine likes ${san}.`;
+    if (!move) return `Play ${san}.`;
 
-    if (move.san.includes("+")) return `${san} keeps up the pressure with a check.`;
-    if (move.san.includes("#")) return `${san} finishes the game.`;
-    if (move.captured) return `${san} wins material while improving the position.`;
-    if (move.flags.includes("k") || move.flags.includes("q")) return `${san} gets the king to safety.`;
+    if (move.san.includes("#")) return `${san} mates.`;
+    if (move.san.includes("+")) return `${san} — check.`;
+    if (move.captured) return `${san} wins material.`;
+    if (move.flags.includes("k") || move.flags.includes("q")) return `${san} — castle.`;
     if (["d4", "d5", "e4", "e5", "c4", "c5", "f4", "f5"].includes(move.to)) {
-      return `${san} fights for central space.`;
+      return `${san} — central.`;
     }
-    if (move.piece === "n" || move.piece === "b") return `${san} improves piece activity.`;
-    return `${san} is the most accurate continuation here.`;
+    if (move.piece === "n" || move.piece === "b") return `${san} — develop.`;
+    return `Play ${san}.`;
   } catch {
-    return `The engine likes ${san}.`;
+    return `Play ${san}.`;
   }
 }
 
