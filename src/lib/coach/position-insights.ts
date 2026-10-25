@@ -124,7 +124,8 @@ export function uciToSan(fen: string, uci: string): string {
   }
 }
 
-export function describeBestMove(fen: string, uci: string): string {
+/** Short idea behind the engine's top move (no eval numbers). */
+export function bestMoveIdea(fen: string, uci: string): { san: string; idea: string } {
   const san = uciToSan(fen, uci);
   try {
     const chess = new Chess(fen);
@@ -133,20 +134,29 @@ export function describeBestMove(fen: string, uci: string): string {
       to: uci.slice(2, 4) as Square,
       promotion: uci.length > 4 ? (uci[4] as "q" | "r" | "b" | "n") : undefined,
     });
-    if (!move) return `Play ${san}.`;
+    if (!move) return { san, idea: "is the engine's pick" };
 
-    if (move.san.includes("#")) return `${san} mates.`;
-    if (move.san.includes("+")) return `${san} — check.`;
-    if (move.captured) return `${san} wins material.`;
-    if (move.flags.includes("k") || move.flags.includes("q")) return `${san} — castle.`;
-    if (["d4", "d5", "e4", "e5", "c4", "c5", "f4", "f5"].includes(move.to)) {
-      return `${san} — central.`;
+    if (move.san.includes("#")) return { san, idea: "finishes the game" };
+    if (move.san.includes("+")) return { san, idea: "keeps the king uncomfortable" };
+    if (move.captured) return { san, idea: "wins material" };
+    if (move.flags.includes("k") || move.flags.includes("q")) {
+      return { san, idea: "gets the king safe" };
     }
-    if (move.piece === "n" || move.piece === "b") return `${san} — develop.`;
-    return `Play ${san}.`;
+    if (["d4", "d5", "e4", "e5", "c4", "c5", "f4", "f5"].includes(move.to)) {
+      return { san, idea: "fights for the center" };
+    }
+    if (move.piece === "n" || move.piece === "b") {
+      return { san, idea: "improves your pieces" };
+    }
+    return { san, idea: "looks most accurate" };
   } catch {
-    return `Play ${san}.`;
+    return { san, idea: "is the engine's pick" };
   }
+}
+
+export function describeBestMove(fen: string, uci: string): string {
+  const { san, idea } = bestMoveIdea(fen, uci);
+  return `${san} ${idea}.`;
 }
 
 export function commentOnLastMove(fen: string, san: string): string | null {

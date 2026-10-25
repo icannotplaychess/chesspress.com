@@ -1,4 +1,3 @@
-import { Chess, type Square } from "chess.js";
 import type {
   CoachPersonality,
   LichessExplorerData,
@@ -6,12 +5,11 @@ import type {
   PositionAnalysis,
 } from "@/lib/types";
 import { CLASSIFICATION_LABELS } from "@/lib/engine/move-classification";
-import { formatEvaluation, toWhitePerspective } from "@/lib/engine/evaluation";
+import { toWhitePerspective } from "@/lib/engine/evaluation";
 import {
   analyzePosition,
-  describeBestMove,
+  bestMoveIdea,
   interpretEvaluation,
-  uciToSan,
 } from "@/lib/coach/position-insights";
 
 interface CoachContext {
@@ -25,149 +23,123 @@ interface CoachContext {
   phase?: "opening" | "middlegame" | "endgame";
 }
 
-const MAX_SENTENCES = 3;
-
 const BLUNDER_JOKES = [
-  "Ouch — that one hurt.",
-  "Stockfish did not love that.",
-  "Your pieces are asking for a time-out.",
+  "That move gave away too much — reset and look for checks and captures.",
+  "Ouch — slow down and scan for threats before you move.",
+  "Not your best — king safety and loose pieces first.",
 ];
 
 const BRILLIANT_REACTIONS = [
-  "Excellent find.",
-  "Strong — well calculated.",
-  "That's the move.",
+  "Beautiful — that was the idea.",
+  "Strong find; you turned the screw there.",
+  "Lovely — that's the move the engine wanted.",
 ];
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function dedupeSentences(sentences: string[]): string[] {
-  const out: string[] = [];
-  for (const raw of sentences) {
-    const s = raw.trim();
-    if (!s) continue;
-    const key = s.toLowerCase().replace(/\s+/g, " ").slice(0, 48);
-    if (out.some((existing) => existing.toLowerCase().startsWith(key.slice(0, 24)))) {
-      continue;
-    }
-    out.push(s);
-    if (out.length >= MAX_SENTENCES) break;
-  }
-  return out;
+function trimOneLine(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
 }
 
-function openingLine(explorer: LichessExplorerData, inBook: boolean): string | null {
-  const name = explorer.opening?.name;
-  if (!name) {
-    return inBook ? "Still in the opening — develop and castle." : null;
-  }
-  const eco = explorer.opening?.eco ? ` (${explorer.opening.eco})` : "";
-  if (inBook) return `${name}${eco}.`;
-  return `Left the ${name} book.`;
-}
-
-function onePositionNote(fen: string, phase: CoachContext["phase"]): string | null {
-  const insights = analyzePosition(fen);
-  if (insights.inCheck) return "King in check — safety first.";
-
-  if (Math.abs(insights.materialDelta) >= 1) return insights.materialText;
-
-  if (phase === "endgame") {
-    return insights.pawnStructure.length < 80
-      ? insights.pawnStructure
-      : "Endgame — activate the king and push passed pawns.";
-  }
-
-  return insights.centerOccupancy;
-}
-
-function engineLine(fen: string, analysis: PositionAnalysis): string | null {
-  const line = analysis.lines[0];
-  if (!line) return null;
-
-  const sideToMove = fen.split(" ")[1] as "w" | "b";
-  const whiteEval = toWhitePerspective(line.scoreCp, line.scoreMate, sideToMove);
-  const evalStr = formatEvaluation(whiteEval.cp, whiteEval.mate, "white");
-  const mood = interpretEvaluation(whiteEval.cp, whiteEval.mate);
-  const bestUci = line.pv[0];
-
-  if (bestUci) {
-    const idea = describeBestMove(fen, bestUci);
-    return `${mood} (${evalStr}). ${idea}`;
-  }
-
-  const bestSan = uciToSan(fen, bestUci ?? "");
-  return `${mood} (${evalStr}). Best: ${bestSan}.`;
-}
-
-function classificationLine(
+function classificationOneLiner(
   classification: MoveClassification,
   personality: CoachPersonality
 ): string | null {
   const quiet: MoveClassification[] = ["good", "book", "best", "great"];
   if (quiet.includes(classification)) return null;
 
+  if (classification === "blunder") {
+    return personality === "serious"
+      ? "Blunder — your king or material was left hanging."
+      : pick(BLUNDER_JOKES);
+  }
+  if (classification === "brilliant") return pick(BRILLIANT_REACTIONS);
+  if (classification === "mistake") {
+    return "Mistake — you let the advantage slip; look for a more active reply.";
+  }
+  if (classification === "miss") {
+    return "You missed a stronger continuation — there was more in the position.";
+  }
+  if (classification === "inaccuracy") {
+    return "Small inaccuracy — fine for humans, but the engine had a sharper idea.";
+  }
+
   const label = CLASSIFICATION_LABELS[classification];
-  const short: Record<MoveClassification, string> = {
-    brilliant: "Top-tier — changes the game.",
-    best: "Engine's top choice.",
-    great: "Strong and accurate.",
-    good: "Fine — keeps balance.",
-    book: "Theory.",
-    inaccuracy: "Small slip — edge fades a bit.",
-    mistake: "Loses ground — look for tactics and threats.",
-    miss: "Stronger line was available.",
-    blunder: "Big swing — reassess threats and king safety.",
-  };
-
-  if (classification === "blunder" && personality !== "serious") {
-    return `${pick(BLUNDER_JOKES)} ${short.blunder}`;
-  }
-  if (classification === "brilliant") {
-    return `${pick(BRILLIANT_REACTIONS)} ${short.brilliant}`;
-  }
-
-  return `${label}. ${short[classification]}`;
+  return `${label} — nothing dramatic, keep playing.`;
 }
 
-function databaseLine(explorer: LichessExplorerData): string | null {
-  const top = explorer.moves[0];
-  if (!top) return null;
-  return `Popular: ${top.san} (${top.white}% / ${top.draws}% / ${top.black}%).`;
+function positionOneLiner(fen: string, phase: CoachContext["phase"]): string {
+  const insights = analyzePosition(fen);
+  if (insights.inCheck) return "Your king is in check — deal with that before anything else.";
+
+  if (Math.abs(insights.materialDelta) >= 1) {
+    return insights.materialText.replace(/\.$/, "") + " — play accordingly.";
+  }
+
+  if (phase === "endgame") {
+    return "Endgame: wake up the king and look for passed pawns.";
+  }
+
+  return insights.centerOccupancy.replace(/\.$/, "") + ".";
+}
+
+function engineOneLiner(
+  fen: string,
+  analysis: PositionAnalysis,
+  explorer: LichessExplorerData | null | undefined,
+  inBook: boolean
+): string {
+  const line = analysis.lines[0];
+  if (!line?.pv[0]) {
+    const sideToMove = fen.split(" ")[1] as "w" | "b";
+    const whiteEval = toWhitePerspective(line.scoreCp, line.scoreMate, sideToMove);
+    return interpretEvaluation(whiteEval.cp, whiteEval.mate);
+  }
+
+  const sideToMove = fen.split(" ")[1] as "w" | "b";
+  const whiteEval = toWhitePerspective(line.scoreCp, line.scoreMate, sideToMove);
+  const mood = interpretEvaluation(whiteEval.cp, whiteEval.mate).replace(/\.$/, "");
+  const { san, idea } = bestMoveIdea(fen, line.pv[0]);
+
+  const openingName = explorer?.opening?.name;
+  if (inBook && openingName) {
+    const popular = explorer?.moves[0]?.san;
+    if (popular && popular === san) {
+      return `${mood} — ${san} ${idea}, and it's the main move in the ${openingName}.`;
+    }
+    return `${mood} — in the ${openingName}, I'd look at ${san} to ${idea}.`;
+  }
+
+  return `${mood} — I'd look at ${san} to ${idea}.`;
 }
 
 export function generateCoachMessage(ctx: CoachContext): string {
-  const inBook = ctx.explorer?.isOpening ?? false;
   const phase = ctx.phase ?? "middlegame";
-  const candidates: string[] = [];
+  const inBook = ctx.explorer?.isOpening ?? false;
 
   if (ctx.classification) {
-    const classLine = classificationLine(ctx.classification, ctx.personality);
-    if (classLine) candidates.push(classLine);
+    const moveNote = classificationOneLiner(ctx.classification, ctx.personality);
+    if (moveNote) return trimOneLine(moveNote);
   }
 
   if (ctx.analysis?.lines[0]) {
-    const eng = engineLine(ctx.fen, ctx.analysis);
-    if (eng) candidates.push(eng);
-  } else if (candidates.length === 0) {
-    candidates.push("Engine is still calculating…");
+    return trimOneLine(
+      engineOneLiner(ctx.fen, ctx.analysis, ctx.explorer, inBook)
+    );
   }
 
-  if (ctx.explorer) {
-    const open = openingLine(ctx.explorer, inBook);
-    if (open) candidates.push(open);
-    if (inBook && ctx.explorer.moves.length > 0) {
-      const db = databaseLine(ctx.explorer);
-      if (db) candidates.push(db);
+  if (ctx.explorer?.opening?.name) {
+    if (inBook && ctx.explorer.moves[0]) {
+      return trimOneLine(
+        `${ctx.explorer.opening.name} — ${ctx.explorer.moves[0].san} is the usual plan here.`
+      );
     }
-  } else {
-    const pos = onePositionNote(ctx.fen, phase);
-    if (pos) candidates.push(pos);
+    return trimOneLine(`You've left the ${ctx.explorer.opening.name} book — play the position on its merits.`);
   }
 
-  return dedupeSentences(candidates).join(" ");
+  return trimOneLine(positionOneLiner(ctx.fen, phase));
 }
 
 export function generatePhase(fen: string, moveNumber: number): "opening" | "middlegame" | "endgame" {
