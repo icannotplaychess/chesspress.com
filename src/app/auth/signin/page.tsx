@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { AuthDivider } from "@/components/auth/AuthDivider";
 import { GoogleButton } from "@/components/auth/GoogleButton";
+import { AuthSetupNotice } from "@/components/auth/AuthSetupNotice";
 import { useClientSearchParamDefault } from "@/hooks/useClientSearchParam";
 
 export default function SignInPage() {
@@ -31,6 +32,15 @@ export default function SignInPage() {
     });
     setLoading(false);
     if (result?.error) {
+      if (
+        result.error === "Configuration" ||
+        result.error.includes("MissingAuthSecret")
+      ) {
+        setError(
+          "Server auth is not configured on this deployment (missing AUTH_SECRET). Use https://chesspress-com.vercel.app or set AUTH_SECRET in Vercel for Preview."
+        );
+        return;
+      }
       setError("Invalid email or password.");
       return;
     }
@@ -40,6 +50,7 @@ export default function SignInPage() {
 
   return (
     <AuthLayout title="Sign in" subtitle="Welcome back to ChessPress">
+      <AuthSetupNotice />
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <p className="text-sm text-[var(--danger)] bg-[var(--danger)]/10 rounded-lg px-3 py-2">

@@ -8,7 +8,7 @@ const MESSAGES: Record<string, { title: string; body: string }> = {
   MissingAuthSecret: {
     title: "Server auth not configured",
     body:
-      "AUTH_SECRET is missing for this deployment (common on Preview URLs). In Vercel → Project → Settings → Environment Variables, set AUTH_SECRET for Production and Preview (generate with: openssl rand -base64 32), then redeploy.",
+      "AUTH_SECRET is missing for this deployment (very common on Preview URLs). In Vercel → Project → Settings → Environment Variables, add AUTH_SECRET (or NEXTAUTH_SECRET) and enable it for Production and Preview (generate with: openssl rand -base64 32), then redeploy. Until then, sign in at https://chesspress-com.vercel.app.",
   },
   DatabaseNotConfigured: {
     title: "Database not linked",

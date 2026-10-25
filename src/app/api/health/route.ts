@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ensureSchema, isSchemaReady } from "@/lib/ensure-schema";
-import { hasDatabaseConfig } from "@/lib/env";
+import { getAuthSecret, hasDatabaseConfig } from "@/lib/env";
 import { prisma } from "@/lib/db";
 
 /** Quick check that the database is reachable (visit /api/health after deploy). */
@@ -20,7 +20,7 @@ export async function GET() {
         ok: false,
         database: "not_configured",
         dbConfig,
-        hasAuthSecret: Boolean(process.env.AUTH_SECRET),
+        hasAuthSecret: Boolean(getAuthSecret()),
         hint:
           "Link Vercel Postgres (Storage → Connect). Vercel sets POSTGRES_PRISMA_URL — you do NOT need POSTGRES_URL.",
       },
@@ -52,7 +52,7 @@ export async function GET() {
         googleAuth: Boolean(
           process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
         ),
-        hasAuthSecret: Boolean(process.env.AUTH_SECRET),
+        hasAuthSecret: Boolean(getAuthSecret()),
         dbConfig,
         hint: tablesReady
           ? undefined

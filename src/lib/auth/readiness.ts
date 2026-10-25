@@ -1,8 +1,8 @@
-import { hasDatabaseConfig } from "@/lib/env";
+import { getAuthSecret, hasDatabaseConfig } from "@/lib/env";
 
 /** Returns an error code for /auth/error when auth cannot run safely. */
 export function getAuthSetupError(): string | null {
-  if (!process.env.AUTH_SECRET) {
+  if (!getAuthSecret()) {
     return "MissingAuthSecret";
   }
   if (!hasDatabaseConfig()) {
