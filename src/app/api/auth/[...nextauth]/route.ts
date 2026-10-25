@@ -7,24 +7,44 @@ import { hasDatabaseConfig } from "@/lib/env";
 
 const { GET: authGET, POST: authPOST } = handlers;
 
-async function prepareAuth() {
+/** OAuth sign-in links are full-page navigations; send humans to /auth/error instead of JSON. */
+function shouldRedirectSetupErrorToPage(request: NextRequest): boolean {
+  return request.nextUrl.pathname.includes("/signin/");
+}
+
+function setupErrorResponse(setupError: string, request: NextRequest) {
+  if (shouldRedirectSetupErrorToPage(request)) {
+    const url = new URL("/auth/error", request.url);
+    url.searchParams.set("error", setupError);
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.json(
+    {
+      error: setupError,
+      message:
+        setupError === "MissingAuthSecret"
+          ? "AUTH_SECRET is not set for this deployment environment."
+          : "Database is not configured for this deployment.",
+    },
+    { status: 503 }
+  );
+}
+
+async function prepareAuth(request: NextRequest) {
   const setupError = getAuthSetupError();
   if (setupError) {
-    return NextResponse.json(
-      {
-        error: setupError,
-        message:
-          setupError === "MissingAuthSecret"
-            ? "AUTH_SECRET is not set for this deployment environment."
-            : "Database is not configured for this deployment.",
-      },
-      { status: 503 }
-    );
+    return setupErrorResponse(setupError, request);
   }
 
   if (hasDatabaseConfig()) {
     const bootstrap = await ensureSchema();
     if (!bootstrap.ok) {
+      if (shouldRedirectSetupErrorToPage(request)) {
+        const url = new URL("/auth/error", request.url);
+        url.searchParams.set("error", "DatabaseSetup");
+        return NextResponse.redirect(url);
+      }
       return NextResponse.json(
         {
           error: "DatabaseSetup",
@@ -40,13 +60,13 @@ async function prepareAuth() {
 }
 
 export async function GET(request: NextRequest) {
-  const blocked = await prepareAuth();
+  const blocked = await prepareAuth(request);
   if (blocked) return blocked;
   return authGET(request);
 }
 
 export async function POST(request: NextRequest) {
-  const blocked = await prepareAuth();
+  const blocked = await prepareAuth(request);
   if (blocked) return blocked;
   return authPOST(request);
 }

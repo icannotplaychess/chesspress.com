@@ -3,7 +3,7 @@ import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { getPrismaClient, prisma } from "@/lib/db";
-import { hasDatabaseConfig } from "@/lib/env";
+import { getAuthSecret, hasDatabaseConfig } from "@/lib/env";
 import { verifyPassword } from "@/lib/auth/password";
 
 const googleEnabled =
@@ -18,7 +18,7 @@ export function createAuthConfig(): NextAuthConfig {
   return {
     // Real Prisma client for OAuth account linking (Proxy can break adapter writes).
     adapter: hasDatabaseConfig() ? getAdapter() : undefined,
-    secret: process.env.AUTH_SECRET,
+    secret: getAuthSecret(),
     trustHost: true,
     session: { strategy: "jwt" },
     pages: {

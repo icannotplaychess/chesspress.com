@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { AuthDivider } from "@/components/auth/AuthDivider";
 import { GoogleButton } from "@/components/auth/GoogleButton";
+import { AuthSetupNotice } from "@/components/auth/AuthSetupNotice";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -54,6 +55,7 @@ export default function SignUpPage() {
 
   return (
     <AuthLayout title="Create account" subtitle="Start your ChessPress journey">
+      <AuthSetupNotice />
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <p className="text-sm text-[var(--danger)] bg-[var(--danger)]/10 rounded-lg px-3 py-2">

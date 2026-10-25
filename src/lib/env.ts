@@ -1,3 +1,10 @@
+/** Auth.js v5 expects AUTH_SECRET; accept legacy NEXTAUTH_SECRET too. */
+export function getAuthSecret(): string | undefined {
+  const value =
+    process.env.AUTH_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim();
+  return value || undefined;
+}
+
 /** Resolve the Postgres URL Vercel/Prisma expect at runtime. */
 export function resolveDatabaseUrl(): string | undefined {
   if (process.env.DATABASE_URL) {

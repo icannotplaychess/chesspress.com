@@ -42,6 +42,18 @@ The Next.js app lives at the **repository root**. Connect the repo to Vercel wit
 | **Build Command** | `npm run build` |
 | **Environment variable** | `LICHESS_API_TOKEN` |
 
+### Sign-in / `MissingAuthSecret`
+
+Email and Google sign-in need **`AUTH_SECRET`** (or `NEXTAUTH_SECRET`) and **Postgres** on the same deployment:
+
+1. Vercel → **Settings → Environment Variables**
+2. Add `AUTH_SECRET` — generate with `openssl rand -base64 32`
+3. Check **Production** and **Preview** (preview branch URLs fail sign-in if Preview is unchecked)
+4. Link **Vercel Postgres** under Storage if not already connected
+5. **Redeploy** after saving variables
+
+Check status: `https://chesspress-com.vercel.app/api/health` — `hasAuthSecret` should be `true`.
+
 ### If the site is blank or shows "not found"
 
 **The app is deployed and working at:** [https://chesspress-com.vercel.app](https://chesspress-com.vercel.app)
