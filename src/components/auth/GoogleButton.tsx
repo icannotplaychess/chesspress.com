@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 
-export function GoogleButton({ callbackUrl = "/dashboard" }: { callbackUrl?: string }) {
+export function GoogleButton({
+  redirectTo = "/dashboard",
+}: {
+  redirectTo?: string;
+}) {
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
@@ -18,7 +22,7 @@ export function GoogleButton({ callbackUrl = "/dashboard" }: { callbackUrl?: str
   return (
     <button
       type="button"
-      onClick={() => signIn("google", { callbackUrl })}
+      onClick={() => signIn("google", { redirectTo })}
       className="w-full flex items-center justify-center gap-3 rounded-lg border border-[var(--panel-border)] bg-[var(--bg)] px-4 py-2.5 text-sm font-medium hover:bg-[#151515] transition-colors"
     >
       <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden>

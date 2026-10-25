@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
+import { useClientSearchParam } from "@/hooks/useClientSearchParam";
 
-function ResetForm() {
-  const params = useSearchParams();
-  const token = params.get("token") ?? "";
+export default function ResetPasswordPage() {
+  const { value: token, ready } = useClientSearchParam("token");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
@@ -16,6 +15,7 @@ function ResetForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!token) return;
     if (password !== confirm) {
       setError("Passwords do not match.");
       return;
@@ -34,6 +34,14 @@ function ResetForm() {
       return;
     }
     setDone(true);
+  }
+
+  if (!ready) {
+    return (
+      <AuthLayout title="Set new password">
+        <p className="text-sm text-[var(--muted)] text-center">Loading…</p>
+      </AuthLayout>
+    );
   }
 
   if (!token) {
@@ -99,13 +107,5 @@ function ResetForm() {
         </form>
       )}
     </AuthLayout>
-  );
-}
-
-export default function ResetPasswordPage() {
-  return (
-    <Suspense>
-      <ResetForm />
-    </Suspense>
   );
 }
