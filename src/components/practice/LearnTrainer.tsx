@@ -51,16 +51,15 @@ export function LearnTrainer({
   const coachMessage = useMemo(() => {
     if (!lesson) return "";
     if (step === "intro") {
-      return `${lesson.intro}\n\n${lesson.openingSummary}`;
+      return `${lesson.intro} ${lesson.openingSummary}`;
     }
     if (step === "complete") {
       return lesson.practicePrompt;
     }
     if (!currentMoveLesson) return "";
-    const role = currentMoveLesson.isUserMove
-      ? "This is **your** move in this repertoire."
-      : "This is your opponent's reply.";
-    return `${role}\n\n**${currentMoveLesson.title}**\n\n${currentMoveLesson.explanation}\n\nKey ideas:\n${currentMoveLesson.ideas.map((i) => `• ${i}`).join("\n")}`;
+    const role = currentMoveLesson.isUserMove ? "Your move." : "Opponent.";
+    const idea = currentMoveLesson.ideas[0];
+    return `${role} ${currentMoveLesson.title} — ${currentMoveLesson.explanation}${idea ? ` (${idea})` : ""}`;
   }, [lesson, step, currentMoveLesson]);
 
   const startSession = useCallback(() => {
