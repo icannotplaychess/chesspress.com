@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { AuthDivider } from "@/components/auth/AuthDivider";
 import { GoogleButton } from "@/components/auth/GoogleButton";
+import { useClientSearchParamDefault } from "@/hooks/useClientSearchParam";
 
-function SignInForm() {
+export default function SignInPage() {
   const router = useRouter();
-  const params = useSearchParams();
-  const callbackUrl = params.get("callbackUrl") ?? "/dashboard";
+  const { value: callbackUrl } = useClientSearchParamDefault(
+    "callbackUrl",
+    "/dashboard"
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -83,7 +86,7 @@ function SignInForm() {
       </form>
 
       <AuthDivider />
-      <GoogleButton callbackUrl={callbackUrl} />
+      <GoogleButton redirectTo={callbackUrl} />
 
       <p className="mt-6 text-center text-sm text-[var(--muted)]">
         No account?{" "}
@@ -92,13 +95,5 @@ function SignInForm() {
         </Link>
       </p>
     </AuthLayout>
-  );
-}
-
-export default function SignInPage() {
-  return (
-    <Suspense>
-      <SignInForm />
-    </Suspense>
   );
 }

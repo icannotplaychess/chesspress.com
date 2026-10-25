@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
+import { useClientSearchParamDefault } from "@/hooks/useClientSearchParam";
 
 const MESSAGES: Record<string, { title: string; body: string }> = {
   MissingAuthSecret: {
@@ -41,13 +40,20 @@ const MESSAGES: Record<string, { title: string; body: string }> = {
   },
 };
 
-function ErrorContent() {
-  const params = useSearchParams();
-  const code = params.get("error") ?? "Configuration";
+export default function AuthErrorPage() {
+  const { value: code, ready } = useClientSearchParamDefault("error", "Configuration");
   const info = MESSAGES[code] ?? {
     title: "Sign-in failed",
     body: `Error code: ${code}. Try email sign-up instead, or clear cookies and try again.`,
   };
+
+  if (!ready) {
+    return (
+      <AuthLayout title="Sign-in" subtitle="Loading…">
+        <p className="text-sm text-[var(--muted)] text-center">One moment…</p>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout title={info.title} subtitle={info.body}>
@@ -66,13 +72,5 @@ function ErrorContent() {
         </Link>
       </div>
     </AuthLayout>
-  );
-}
-
-export default function AuthErrorPage() {
-  return (
-    <Suspense>
-      <ErrorContent />
-    </Suspense>
   );
 }

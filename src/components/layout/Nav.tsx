@@ -52,7 +52,13 @@ export function Nav() {
               </Link>
               <button
                 type="button"
-                onClick={() => signOut({ callbackUrl: "/" })}
+                onClick={async () => {
+                  try {
+                    await signOut({ redirectTo: "/", redirect: true });
+                  } catch {
+                    window.location.href = "/";
+                  }
+                }}
                 className="cp-pill"
                 aria-label="Sign out"
               >
@@ -61,10 +67,10 @@ export function Nav() {
             </>
           ) : (
             <>
-              <Link href="/auth/signin" className="cp-pill no-underline">
+              <Link href="/auth/signin" prefetch={false} className="cp-pill no-underline">
                 Sign in
               </Link>
-              <Link href="/auth/signup" className="cp-pill on no-underline">
+              <Link href="/auth/signup" prefetch={false} className="cp-pill on no-underline">
                 Sign up
               </Link>
             </>
